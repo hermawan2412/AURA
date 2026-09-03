@@ -1,0 +1,14 @@
+{
+    "name": "instansi/aurat",
+    "description": "AURA (Aplikasi Untuk suRAt) — generate surat dinas dari template DOCX",
+    "type": "project",
+    "require": {
+        "php": ">=8.1",
+        "phpoffice/phpword": "^0.18"
+    },
+    "autoload": {
+        "psr-4": {
+            "Aurat\\": "src/"
+        }
+    }
+}

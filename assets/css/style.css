@@ -1,0 +1,178 @@
+/* Dibundel lokal (bukan andalkan font sistem) supaya logo Arab tampil sama persis di semua
+   OS/PC, termasuk Windows kantor yang belum tentu punya font Arab macOS ("Geeza Pro" dkk).
+   Subset cuma 4 huruf yang dipakai logo (ا و ر ت) -- Noto Kufi Arabic, lisensi OFL, lihat
+   assets/fonts/OFL.txt. */
+@font-face{
+  font-family:"Aurat Kufi";
+  src:url("../fonts/noto-kufi-arabic-bold-subset.woff2") format("woff2");
+  font-weight:700;
+  font-style:normal;
+  font-display:swap;
+  unicode-range:U+627,U+62A,U+631,U+648;
+}
+:root{
+  --paper:#F7F5F0; --surface:#FFFFFF; --surface-2:#F1EDE3; --ink:#20262C; --ink-dim:#727C74;
+  --primary:#1E3E5C; --primary-soft:#E6EDF3; --primary-ink:#F7F5F0;
+  --accent:#B8452F; --accent-soft:#F7E3DA; --accent-ink:#FBF3EC;
+  --primary-rgb:30,62,92; --accent-rgb:184,69,47; --aurora-plum-rgb:154,95,176; --aurora-teal-rgb:62,158,140;
+  --border:#E7E1D3; --border-strong:#D6CEBB;
+  --shadow-sm: 0 1px 2px rgba(32,38,44,0.05);
+  --shadow-md: 0 10px 28px rgba(32,38,44,0.10), 0 2px 6px rgba(32,38,44,0.05);
+  --r-xs:8px; --r-sm:11px; --r-md:16px; --r-lg:22px; --r-pill:999px;
+  --sans: -apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans",Roboto,Helvetica,Arial,sans-serif;
+  --display: "Avenir Next","Century Gothic",-apple-system,"Segoe UI",sans-serif;
+  --mono: "SF Mono","Cascadia Code",Consolas,"Liberation Mono",monospace;
+  --arabic: "Geeza Pro","Al Bayan","Damascus","KufiStandardGK","Traditional Arabic","Arabic Typesetting","Noto Naskh Arabic",serif;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --paper:#15181B; --surface:#1C2024; --surface-2:#22262B; --ink:#E9E5DA; --ink-dim:#96A099;
+    --primary:#7FA8CE; --primary-soft:#233240; --primary-ink:#0E1215;
+    --accent:#E08267; --accent-soft:#3A2620; --accent-ink:#1A0F0C;
+    --primary-rgb:127,168,206; --accent-rgb:224,130,103; --aurora-plum-rgb:201,144,222; --aurora-teal-rgb:99,199,178;
+    --border:#2A2F34; --border-strong:#3A4046;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.3); --shadow-md: 0 12px 30px rgba(0,0,0,0.38), 0 2px 8px rgba(0,0,0,0.3);
+  }
+}
+*{box-sizing:border-box;}
+body{margin:0; font-family:var(--sans); background:var(--paper); color:var(--ink);}
+h1,h2,h3{font-family:var(--display); font-weight:700; margin:0;}
+a{color:inherit;}
+.tnum{font-variant-numeric:tabular-nums;}
+
+.login-screen{min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;}
+.login-card{width:100%; max-width:380px; background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); box-shadow:var(--shadow-md); padding:38px 34px;}
+.logo-ar{font-family:"Aurat Kufi","KufiStandardGK",var(--arabic); font-weight:700; font-size:3.6rem; line-height:1; letter-spacing:0.03em; color:var(--primary); text-align:center; margin:0 0 16px;}
+.login-card h1{text-align:center;}
+.login-sub{color:var(--ink-dim); font-size:0.9rem; margin-bottom:28px; text-align:center;}
+.login-hint{margin-top:18px; font-size:0.78rem; color:var(--ink-dim); border-top:1px solid var(--border); padding-top:14px;}
+
+.field{display:flex; flex-direction:column; gap:6px; margin-bottom:16px;}
+.field label{font-size:0.8rem; color:var(--ink-dim);}
+.field input, .field select, .field textarea{
+  font-family:var(--sans); font-size:0.95rem; color:var(--ink); background:var(--surface-2);
+  border:1px solid transparent; border-radius:var(--r-xs); padding:10px 13px; width:100%;
+}
+.field input:focus, .field select:focus, .field textarea:focus{ background:var(--surface); border-color:var(--accent); outline:none; }
+.field textarea{resize:vertical; min-height:80px;}
+.req{color:var(--accent);}
+
+.btn{display:inline-flex; align-items:center; justify-content:center; gap:8px; border-radius:var(--r-sm); border:1px solid transparent; padding:11px 20px; font-size:0.92rem; font-weight:600; cursor:pointer; text-decoration:none;}
+.btn-primary{background:var(--accent); color:var(--accent-ink); box-shadow:var(--shadow-sm);}
+.btn-secondary{background:var(--surface-2); color:var(--ink);}
+.btn-block{width:100%;}
+
+.alert{border-radius:var(--r-sm); padding:12px 16px; font-size:0.85rem; margin-bottom:18px;}
+.alert-error{background:var(--accent-soft); color:var(--ink);}
+.alert-info{background:var(--surface-2); color:var(--ink);}
+
+.shell{display:flex; min-height:100vh;}
+.sidebar{width:240px; flex:0 0 240px; background:var(--surface); border-right:1px solid var(--border); display:flex; flex-direction:column; padding:24px 16px; gap:24px; position:sticky; top:0; height:100vh;}
+.brand{display:flex; align-items:center; gap:11px; padding:0 6px;}
+.brand-mark{width:32px; height:32px; border-radius:var(--r-xs); background:var(--primary); color:var(--primary-ink); display:flex; align-items:center; justify-content:center; font-family:"Aurat Kufi","KufiStandardGK",var(--arabic); font-weight:700; font-size:20px; padding-top:2px;}
+.brand-text{font-family:var(--display); font-weight:700; font-size:1.02rem; line-height:1.15;}
+.brand-text small{display:block; font-family:var(--sans); font-weight:500; font-size:0.68rem; color:var(--ink-dim); text-transform:uppercase; letter-spacing:.04em;}
+.nav-label{font-size:0.68rem; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-dim); padding:6px 12px 4px;}
+.nav-group{display:flex; flex-direction:column; gap:2px; margin-bottom:6px;}
+.nav-item{display:flex; align-items:center; gap:10px; padding:9px 12px; border-radius:var(--r-pill); color:var(--ink-dim); text-decoration:none; font-size:0.88rem; font-weight:500;}
+.nav-item:hover{background:var(--surface-2); color:var(--ink);}
+.nav-item.active{background:var(--primary-soft); color:var(--primary); font-weight:700;}
+.sidebar-footer{margin-top:auto; border-top:1px solid var(--border); padding-top:14px; font-size:0.82rem;}
+.sidebar-user b{display:block; font-size:0.86rem;}
+.sidebar-user span{font-size:0.72rem; color:var(--ink-dim);}
+.logout-link{background:none; border:none; color:var(--ink-dim); font-size:0.78rem; cursor:pointer; padding:0; text-decoration:underline;}
+
+.main{flex:1; min-width:0; padding:36px 42px 60px;}
+.crumb{font-size:0.76rem; color:var(--ink-dim); text-transform:uppercase; letter-spacing:.06em; margin-bottom:8px; font-weight:600;}
+.topbar{margin-bottom:28px;}
+.topbar p{color:var(--ink-dim); font-size:0.92rem; margin-top:8px; max-width:60ch;}
+
+.card-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:16px;}
+.letter-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--r-md); padding:22px; display:flex; flex-direction:column; gap:12px; text-decoration:none; color:inherit; box-shadow:var(--shadow-sm);}
+.letter-icon{display:inline-flex; align-items:center; justify-content:center; align-self:flex-start; width:56px; height:56px; border-radius:var(--r-md); background:var(--primary); color:var(--primary-ink); box-shadow:var(--shadow-sm);}
+.letter-icon svg{width:30px; height:30px; stroke-width:2;}
+.letter-icon--sm{width:34px; height:34px; border-radius:var(--r-xs);}
+.letter-icon--sm svg{width:19px; height:19px;}
+.nav-icon{display:inline-flex; align-items:center; justify-content:center; width:26px; height:26px; border-radius:var(--r-xs); background:var(--primary-soft); color:var(--primary); flex:0 0 auto;}
+.nav-icon svg{width:15px; height:15px; stroke-width:2;}
+.nav-item.active .nav-icon{background:var(--primary); color:var(--primary-ink);}
+.letter-card .kind{display:inline-flex; align-self:flex-start; font-size:0.68rem; text-transform:uppercase; letter-spacing:.06em; color:var(--primary); background:var(--primary-soft); padding:4px 10px; border-radius:var(--r-pill); font-weight:700;}
+.letter-card p{font-size:0.85rem; color:var(--ink-dim); line-height:1.5;}
+.letter-card .go{font-size:0.8rem; color:var(--accent); font-weight:700; margin-top:auto;}
+
+.form-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); box-shadow:var(--shadow-sm); padding:30px 32px; max-width:880px;}
+.note{background:var(--accent-soft); border-radius:var(--r-sm); padding:13px 16px; font-size:0.82rem; margin-bottom:22px; max-width:880px; line-height:1.5;}
+.grid-2{display:grid; grid-template-columns:1fr 1fr; gap:16px 20px;}
+.grid-3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:16px 20px;}
+.form-section{display:flex; flex-direction:column; gap:16px; padding-bottom:26px; margin-bottom:26px; border-bottom:1px solid var(--border);}
+.form-section:last-of-type{border-bottom:none; padding-bottom:0; margin-bottom:0;}
+
+.table-wrap{overflow-x:auto; border:1px solid var(--border); border-radius:var(--r-md);}
+table{width:100%; border-collapse:collapse; min-width:520px;}
+thead th{background:var(--surface-2); text-align:left; font-size:0.72rem; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-dim); padding:12px 14px; border-bottom:1px solid var(--border); font-weight:700;}
+tbody td{padding:10px 14px; border-bottom:1px solid var(--border); font-size:0.86rem;}
+tbody tr:last-child td{border-bottom:none;}
+
+.toolbar{display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:16px; max-width:980px;}
+.search-input{flex:1; max-width:320px;}
+
+.picker-results{border:1px solid var(--border-strong); border-radius:var(--r-sm); margin-top:6px; max-height:220px; overflow-y:auto; display:none; background:var(--surface); box-shadow:var(--shadow-md);}
+.picker-row{display:flex; justify-content:space-between; align-items:center; padding:9px 12px; cursor:pointer;}
+.picker-row:hover{background:var(--surface-2);}
+.picker-row b{display:block; font-size:0.86rem;}
+.picker-row span{font-size:0.74rem; color:var(--ink-dim); font-family:var(--mono);}
+
+/* Cahaya ambient warna-warni ("aurora") yang mengikuti kursor (lihat assets/js/ambient-glow.js).
+   Empat warna diletakkan di 4 arah (offset x/y ditukar-silang per lapisan) supaya tiap sisi box
+   condong ke warna berbeda dan bergeser saat kursor bergerak -- murni box-shadow (bukan pseudo-
+   element/gradient) supaya tetap render di belakang background box, termasuk pada <input>. */
+.has-glow{ --glow-x:0px; --glow-y:0px; }
+
+.login-card.has-glow{ transition: box-shadow .25s ease, border-color .25s ease; }
+.login-card.has-glow:hover{
+  border-color: var(--border-strong);
+  box-shadow:
+    calc(var(--glow-x) * -2)   calc(var(--glow-y) * -2)   60px -14px rgba(var(--accent-rgb), 0.34),
+    calc(var(--glow-y) * 1.6)  calc(var(--glow-x) * -1.6) 54px -16px rgba(var(--aurora-plum-rgb), 0.28),
+    calc(var(--glow-x) * 2)    calc(var(--glow-y) * 2)    60px -14px rgba(var(--primary-rgb), 0.30),
+    calc(var(--glow-y) * -1.6) calc(var(--glow-x) * 1.6)  54px -16px rgba(var(--aurora-teal-rgb), 0.26),
+    var(--shadow-md);
+}
+
+.letter-card.has-glow{ transition: box-shadow .2s ease, border-color .2s ease, transform .2s ease; }
+.letter-card.has-glow:hover{
+  border-color: var(--border-strong);
+  transform: translateY(-2px);
+  box-shadow:
+    /* Jangkauan (offset+blur-spread) dijaga tetap sepadan gap 16px .card-grid; warna dipekatkan
+       (alpha naik) + blur sedikit dilebarkan supaya transisi gradiennya lebih kerasa/halus. */
+    calc(var(--glow-x) * -0.6) calc(var(--glow-y) * -0.6) 22px -7px rgba(var(--accent-rgb), 0.68),
+    calc(var(--glow-y) * 0.5) calc(var(--glow-x) * -0.5) 20px -9px rgba(var(--aurora-plum-rgb), 0.58),
+    calc(var(--glow-x) * 0.6)  calc(var(--glow-y) * 0.6)  22px -7px rgba(var(--primary-rgb), 0.60),
+    calc(var(--glow-y) * -0.5) calc(var(--glow-x) * 0.5)  20px -9px rgba(var(--aurora-teal-rgb), 0.52),
+    var(--shadow-md);
+}
+
+.btn.has-glow{ transition: box-shadow .2s ease; }
+.btn.has-glow:hover, .btn.has-glow:focus-visible{
+  box-shadow:
+    calc(var(--glow-x) * -1) calc(var(--glow-y) * -1) 18px -4px rgba(var(--accent-rgb), 0.46),
+    calc(var(--glow-y) * 1)  calc(var(--glow-x) * -1) 16px -6px rgba(var(--aurora-plum-rgb), 0.34),
+    calc(var(--glow-x) * 1)  calc(var(--glow-y) * 1)  18px -4px rgba(var(--primary-rgb), 0.38),
+    var(--shadow-sm);
+}
+
+.field input.has-glow, .field select.has-glow, .field textarea.has-glow{ transition: box-shadow .2s ease, background .15s ease, border-color .15s ease; }
+.field input.has-glow:hover, .field select.has-glow:hover, .field textarea.has-glow:hover,
+.field input.has-glow:focus, .field select.has-glow:focus, .field textarea.has-glow:focus{
+  box-shadow:
+    calc(var(--glow-x) * -0.8) calc(var(--glow-y) * -0.8) 14px -6px rgba(var(--accent-rgb), 0.30),
+    calc(var(--glow-x) * 0.8)  calc(var(--glow-y) * 0.8)  14px -6px rgba(var(--aurora-teal-rgb), 0.24);
+}
+
+@media (max-width: 860px){
+  .shell{flex-direction:column;}
+  .sidebar{width:100%; flex:0 0 auto; height:auto; position:relative; flex-direction:row; flex-wrap:wrap;}
+  .main{padding:24px 18px 50px;}
+  .grid-2, .grid-3{grid-template-columns:1fr;}
+}

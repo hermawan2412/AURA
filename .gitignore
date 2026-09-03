@@ -1,0 +1,10 @@
+/vendor/
+/config/config.php
+.DS_Store
+
+# Template hasil upload admin (Kelola Jenis Surat) - konten runtime
+# spesifik-deployment, bukan source code. templates/*.docx (versi contoh
+# bawaan) TETAP di-track, cuma yang di uploaded/ (hash random per upload).
+templates/uploaded/*
+!templates/uploaded/.htaccess
+!templates/uploaded/.gitkeep

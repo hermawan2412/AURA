@@ -1,0 +1,22 @@
+{
+  "kode": "surat_tugas",
+  "nama": "Surat Tugas",
+  "kategori": "single_dokumen",
+  "kop_surat": "standar",
+  "template_file": "templates/surat_tugas.docx",
+  "tabel_pegawai": {
+    "kolom": [
+      { "kode": "no", "label": "No.", "sumber": "auto_nomor" },
+      { "kode": "nama", "label": "Nama", "sumber": "pegawai_field", "field_pegawai": "nama_lengkap" },
+      { "kode": "nip", "label": "NIP", "sumber": "pegawai_field", "field_pegawai": "nip" },
+      { "kode": "jabatan_satker", "label": "Jabatan dan Satuan Kerja", "sumber": "pegawai_field", "field_pegawai": "jabatan" },
+      { "kode": "tanggal", "label": "Tanggal", "sumber": "manual_per_baris" }
+    ]
+  },
+  "field_umum": [
+    { "kode": "nomor_surat", "label": "Nomor Surat", "tipe": "text", "wajib": true },
+    { "kode": "dasar_undangan", "label": "Dasar (No. & Tgl. Surat Undangan)", "tipe": "text", "wajib": false },
+    { "kode": "uraian_tugas", "label": "Uraian Tugas", "tipe": "textarea", "wajib": true },
+    { "kode": "sumber_anggaran", "label": "Sumber Anggaran (DIPA) — kosongkan jika tanpa SPD", "tipe": "text", "wajib": false }
+  ]
+}

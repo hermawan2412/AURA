@@ -1,0 +1,21 @@
+{
+  "kode": "cuti",
+  "nama": "Surat Cuti",
+  "kategori": "single_dokumen",
+  "kop_surat": "tanpa_kop",
+  "template_file": "templates/cuti.docx",
+  "peran_pegawai": [
+    { "kode": "pemohon", "label": "Pegawai Pemohon", "sumber": "pegawai_single", "wajib": true }
+  ],
+  "field_umum": [
+    { "kode": "nomor_surat", "label": "Nomor Surat", "tipe": "text", "wajib": true },
+    {
+      "kode": "jenis_cuti", "label": "Jenis Cuti", "tipe": "select", "wajib": true,
+      "opsi": ["Tahunan", "Sakit", "Melahirkan", "Besar", "Alasan Penting", "Luar Tanggungan Negara"]
+    },
+    { "kode": "tanggal_mulai", "label": "Tanggal Mulai", "tipe": "date", "wajib": true },
+    { "kode": "tanggal_selesai", "label": "Tanggal Selesai", "tipe": "date", "wajib": true },
+    { "kode": "alamat_cuti", "label": "Alamat Selama Cuti", "tipe": "text", "wajib": false },
+    { "kode": "alasan", "label": "Alasan", "tipe": "textarea", "wajib": false }
+  ]
+}

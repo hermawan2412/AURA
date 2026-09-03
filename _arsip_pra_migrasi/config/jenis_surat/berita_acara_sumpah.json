@@ -1,0 +1,20 @@
+{
+  "kode": "berita_acara_sumpah",
+  "nama": "Berita Acara Pengambilan Sumpah",
+  "kategori": "single_dokumen",
+  "kop_surat": "tanpa_kop",
+  "template_file": "templates/berita_acara_sumpah.docx",
+  "peran_pegawai": [
+    { "kode": "pengambil_sumpah", "label": "Pejabat yang Mengambil Sumpah", "sumber": "pegawai_single", "wajib": true },
+    { "kode": "disumpah", "label": "PNS yang Disumpah", "sumber": "pegawai_single", "wajib": true },
+    { "kode": "saksi_1", "label": "Saksi 1", "sumber": "pegawai_single", "wajib": true },
+    { "kode": "saksi_2", "label": "Saksi 2", "sumber": "pegawai_single", "wajib": true },
+    { "kode": "rohaniawan", "label": "Rohaniawan Pendamping", "sumber": "pegawai_single", "wajib": true }
+  ],
+  "field_umum": [
+    { "kode": "nomor_surat", "label": "Nomor Surat", "tipe": "text", "wajib": true },
+    { "kode": "hari_tanggal", "label": "Hari, Tanggal Pengambilan Sumpah", "tipe": "date", "wajib": true },
+    { "kode": "dasar_sk_nomor", "label": "Nomor SK Pengangkatan", "tipe": "text", "wajib": true },
+    { "kode": "dasar_sk_tanggal", "label": "Tanggal SK Pengangkatan", "tipe": "date", "wajib": true }
+  ]
+}

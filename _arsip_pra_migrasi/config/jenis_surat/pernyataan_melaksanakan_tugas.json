@@ -1,0 +1,20 @@
+{
+  "kode": "pernyataan_melaksanakan_tugas",
+  "nama": "Surat Pernyataan Melaksanakan Tugas",
+  "kategori": "single_dokumen",
+  "kop_surat": "standar",
+  "template_file": "templates/pernyataan_melaksanakan_tugas.docx",
+  "peran_pegawai": [
+    { "kode": "menyatakan", "label": "Pejabat yang Menyatakan", "sumber": "pegawai_single", "wajib": true },
+    { "kode": "dinyatakan", "label": "Pegawai yang Dinyatakan", "sumber": "pegawai_single", "wajib": true }
+  ],
+  "field_umum": [
+    { "kode": "nomor_surat", "label": "Nomor Surat", "tipe": "text", "wajib": true },
+    { "kode": "dasar_sk_nomor", "label": "Nomor SK Dasar", "tipe": "text", "wajib": true },
+    { "kode": "dasar_sk_tanggal", "label": "Tanggal SK Dasar", "tipe": "date", "wajib": true },
+    { "kode": "tmt", "label": "Terhitung Mulai Tanggal (TMT)", "tipe": "date", "wajib": true },
+    { "kode": "instansi", "label": "Instansi / Satuan Kerja", "tipe": "text", "wajib": true },
+    { "kode": "besaran_tunjangan", "label": "Besaran Tunjangan — ketik angka saja, mis. 185000 (kosongkan jika tidak ada)", "tipe": "text", "wajib": false },
+    { "kode": "tujuan_surat", "label": "Ditujukan Kepada (mis. Kepala KPPN)", "tipe": "text", "wajib": true }
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "kode": "pelaksana_harian",
+  "nama": "Surat Penunjukan Pelaksana Harian",
+  "kategori": "single_dokumen",
+  "kop_surat": "standar",
+  "template_file": "templates/pelaksana_harian.docx",
+  "peran_pegawai": [
+    { "kode": "menunjuk", "label": "Pejabat yang Menunjuk", "sumber": "pegawai_single", "wajib": true },
+    { "kode": "ditunjuk", "label": "Pejabat yang Ditunjuk (Plh)", "sumber": "pegawai_single", "wajib": true }
+  ],
+  "field_umum": [
+    { "kode": "nomor_surat", "label": "Nomor Surat", "tipe": "text", "wajib": true },
+    { "kode": "jabatan_diplh", "label": "Jabatan yang Di-Plh-kan (lengkap, mis. Sekretaris Pengadilan Agama Rantau)", "tipe": "text", "wajib": true },
+    { "kode": "tanggal_pelaksanaan", "label": "Tanggal Pelaksanaan", "tipe": "date", "wajib": true },
+    { "kode": "alasan", "label": "Alasan — kosongkan untuk pakai default \"melaksanakan dinas\"", "tipe": "text", "wajib": false },
+    { "kode": "dasar_surat_tugas", "label": "Dasar (No. & Tgl. Surat Tugas)", "tipe": "text", "wajib": false }
+  ]
+}

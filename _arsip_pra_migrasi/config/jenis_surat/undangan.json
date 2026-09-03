@@ -1,0 +1,19 @@
+{
+  "kode": "undangan",
+  "nama": "Surat Undangan",
+  "kategori": "single_dokumen",
+  "kop_surat": "standar",
+  "template_file": "templates/undangan.docx",
+  "field_umum": [
+    { "kode": "nomor_surat", "label": "Nomor", "tipe": "text", "wajib": true },
+    { "kode": "sifat", "label": "Sifat", "tipe": "text", "wajib": false },
+    { "kode": "lampiran", "label": "Lampiran", "tipe": "text", "wajib": false },
+    { "kode": "hal", "label": "Hal", "tipe": "text", "wajib": true },
+    { "kode": "nama_acara", "label": "Nama/Uraian Acara (untuk kalimat pembuka)", "tipe": "text", "wajib": true },
+    { "kode": "tujuan", "label": "Kepada Yth.", "tipe": "textarea_datalist", "wajib": true },
+    { "kode": "hari", "label": "Hari", "tipe": "text", "wajib": true },
+    { "kode": "tanggal_acara", "label": "Tanggal", "tipe": "date", "wajib": true },
+    { "kode": "waktu", "label": "Waktu", "tipe": "text", "wajib": true },
+    { "kode": "tempat", "label": "Tempat", "tipe": "text", "wajib": true }
+  ]
+}

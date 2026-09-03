@@ -1,0 +1,42 @@
+{
+  "kode": "sk",
+  "nama": "Surat Keputusan",
+  "kategori": "dua_dokumen",
+  "kop_surat": "gambar_sk",
+  "template_file": {
+    "tim_kerja": "templates/sk_tim_kerja.docx",
+    "panitia": "templates/sk_panitia.docx"
+  },
+  "sub_jenis": [
+    { "kode": "tim_kerja", "label": "SK Tim Kerja" },
+    { "kode": "panitia", "label": "SK Panitia Kegiatan" }
+  ],
+  "peran_pegawai": [
+    { "kode": "penetap", "label": "Pejabat yang Menetapkan", "sumber": "pegawai_single", "wajib": true }
+  ],
+  "tabel_pegawai": {
+    "kolom_default": [
+      { "kode": "no", "label": "No", "sumber": "auto_nomor" },
+      { "kode": "nama", "label": "Nama", "sumber": "pegawai_field", "field_pegawai": "nama_lengkap" },
+      { "kode": "nip", "label": "NIP", "sumber": "pegawai_field", "field_pegawai": "nip" },
+      { "kode": "jabatan", "label": "Jabatan", "sumber": "pegawai_field", "field_pegawai": "jabatan" },
+      { "kode": "kedudukan", "label": "Kedudukan", "sumber": "manual_per_baris" }
+    ],
+    "override_per_sub_jenis": {
+      "panitia": [
+        { "kode": "no", "label": "No", "sumber": "auto_nomor" },
+        { "kode": "nama", "label": "Nama", "sumber": "pegawai_field", "field_pegawai": "nama_lengkap" },
+        { "kode": "nip", "label": "NIP", "sumber": "pegawai_field", "field_pegawai": "nip" },
+        { "kode": "peran_panitia", "label": "Peran dalam Panitia", "sumber": "manual_per_baris" }
+      ]
+    }
+  },
+  "field_umum": [
+    { "kode": "nomor_sk", "label": "Nomor SK", "tipe": "text", "wajib": true },
+    { "kode": "tanggal_penetapan", "label": "Tanggal Penetapan", "tipe": "date", "wajib": true },
+    { "kode": "tentang", "label": "Tentang / Perihal (judul lengkap, termasuk tahun)", "tipe": "text", "wajib": true },
+    { "kode": "menimbang", "label": "Menimbang (bernomor a, b, c, ...)", "tipe": "textarea", "wajib": true },
+    { "kode": "mengingat", "label": "Mengingat (bernomor 1, 2, 3, ...)", "tipe": "textarea", "wajib": true },
+    { "kode": "diktum", "label": "Diktum (KESATU, KEDUA, KETIGA, ...)", "tipe": "textarea", "wajib": true }
+  ]
+}
