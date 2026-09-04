@@ -88,6 +88,26 @@ Pastikan user yang menjalankan Apache/PHP-FPM bisa membaca semua file (biasanya 
 
 **Jangan salin folder `_arsip_pra_migrasi/`** ke server — isinya kode & config lama sebelum mesin generic ini ada, disimpan cuma sebagai referensi historis di komputer developer, tidak dipakai aplikasi sama sekali.
 
+## 6a. Sync pegawai dari RESTU (opsional, cuma kalau satu server dgn app RESTU)
+
+Kalau server ini juga menjalankan app RESTU (cuti) di MySQL instance yang sama, `cron/sync_pegawai_dari_restu.php` bisa nyinkron `nama_lengkap`/`jabatan`/`golongan_ruang`/`tmt` pegawai dari RESTU ke AURA tiap hari, satu arah (RESTU -> AURA), read-only terhadap RESTU. Field lain (pangkat, gelar, unit_kerja, status_aktif) sengaja tidak disentuh — lihat komentar di kepala file skrip untuk alasannya.
+
+1. Buat user MySQL read-only, cuma ke 3 tabel yang dibutuhkan:
+   ```sql
+   CREATE USER 'aura_restu_reader'@'localhost' IDENTIFIED BY 'PASSWORD_BARU_DI_SINI';
+   GRANT SELECT ON restu.pegawai TO 'aura_restu_reader'@'localhost';
+   GRANT SELECT ON restu.jabatan TO 'aura_restu_reader'@'localhost';
+   GRANT SELECT ON restu.golongan TO 'aura_restu_reader'@'localhost';
+   FLUSH PRIVILEGES;
+   ```
+2. Isi blok `db_restu_readonly` di `config/config.php` dengan kredensial di atas (lihat `config.example.php`).
+3. Tes dulu tanpa nulis apa-apa: `php cron/sync_pegawai_dari_restu.php --dry-run` — cek daftar NIP yang bakal ke-update/dibuat masuk akal, baru lanjut.
+4. Pasang cron (`/etc/cron.d/aura-sync-pegawai-restu`, root:root, 644):
+   ```
+   0 1 * * * www-data /usr/bin/php /var/www/aura/cron/sync_pegawai_dari_restu.php >> /var/log/aura-sync-pegawai-restu.log 2>&1
+   ```
+5. Kalau server ini BUKAN satu MySQL instance dengan RESTU (server terpisah), skip semua langkah di atas — hapus/kosongkan `db_restu_readonly` dari config dan jangan pasang cron-nya, skrip akan exit dengan pesan error yang jelas kalau config-nya belum ada, bukan crash diam-diam.
+
 ## 7. Akses
 
 ```
