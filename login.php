@@ -41,8 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
 <div class="login-screen">
   <form class="login-card" method="post" action="login.php">
-    <div class="logo-ar" lang="ar" dir="rtl">اورا</div>
-    <h1>AURA</h1>
+    <img class="logo-img" src="assets/img/logo.png" alt="AURA">
     <p class="login-sub">Aplikasi Untuk suRAt<br>Sekretariat &middot; Bagian Kepegawaian</p>
 
     <?php if ($pesanError !== ''): ?>

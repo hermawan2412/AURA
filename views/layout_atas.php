@@ -33,7 +33,7 @@ foreach (JenisSuratRepository::semua(true) as $js) {
 <div class="shell">
   <aside class="sidebar">
     <div class="brand">
-      <div class="brand-mark" lang="ar" dir="rtl">ا</div>
+      <img class="brand-mark" src="<?php echo isset($rootAsset) ? $rootAsset : ''; ?>assets/img/logo-mark.png" alt="AURA">
       <div class="brand-text">AURA<small>Bagian Kepegawaian</small></div>
     </div>
 
