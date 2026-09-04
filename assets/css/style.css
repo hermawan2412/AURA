@@ -31,7 +31,6 @@ a{color:inherit;}
 .login-card{width:100%; max-width:380px; background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); box-shadow:var(--shadow-md); padding:38px 34px;}
 .logo-img{display:block; max-width:130px; height:auto; margin:0 auto 16px;}
 .login-sub{color:var(--ink-dim); font-size:0.9rem; margin-bottom:28px; text-align:center;}
-.login-hint{margin-top:18px; font-size:0.78rem; color:var(--ink-dim); border-top:1px solid var(--border); padding-top:14px;}
 
 .field{display:flex; flex-direction:column; gap:6px; margin-bottom:16px;}
 .field label{font-size:0.8rem; color:var(--ink-dim);}

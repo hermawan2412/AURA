@@ -59,7 +59,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       <input id="password" name="password" type="password" autocomplete="current-password" required>
     </div>
     <button type="submit" class="btn btn-primary btn-block">Masuk</button>
-    <p class="login-hint">Hanya dapat diakses dari jaringan kantor.</p>
   </form>
 </div>
 <script src="assets/js/ambient-glow.js"></script>
