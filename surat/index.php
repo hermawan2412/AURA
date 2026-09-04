@@ -43,13 +43,13 @@ function auratNamaUnduhan(array $jenisSurat, $subJenisKode, array $nilai)
  * Validasi + resolusi nilai + generate dokumen dari data POST. Return string pesan
  * error kalau gagal; kalau berhasil, stream dokumen langsung lalu exit (tidak return).
  */
-function auratProsesGenerate(array $jenisSurat, $subJenisSuratId, $subJenisKode, array $template, array $variabelList, array $variabelManual, array $blokList)
+function auratProsesGenerate(array $jenisSurat, $subJenisSuratId, $subJenisKode, array $template, array $variabelList, array $variabelManual, array $blokList, array $peranDipakai)
 {
     $pdo = Database::pdo();
 
     // --- 1. Kumpulkan id pegawai dari picker peran tunggal ---
     $idPeran = array(); // peran_kode => id pegawai
-    foreach ($jenisSurat['peran_pegawai'] as $peran) {
+    foreach ($peranDipakai as $peran) {
         $nilaiPost = isset($_POST['pegawai_id'][$peran['kode']]) ? (int) $_POST['pegawai_id'][$peran['kode']] : 0;
         if ($nilaiPost > 0) {
             $idPeran[$peran['kode']] = $nilaiPost;
@@ -268,10 +268,22 @@ foreach ($variabelList as $v) {
 }
 $blokList = BlokTabelRepository::blokUntuk($jenisSurat['id'], $subJenisSuratId);
 
+// peran_pegawai_surat itu SLOT jenis_surat-wide, bukan per sub_jenis - jenis surat
+// dengan 2+ sub_jenis yang butuh peran BEDA (mis. sub_jenis A pakai peran X, sub_jenis
+// B pakai peran Y) bakal salah kalau render loop pakai $jenisSurat['peran_pegawai']
+// mentah-mentah (nampilin/wajibin picker peran yang gak dipakai template sub_jenis
+// yang lagi aktif sama sekali). Persempit ke peran yang BENERAN dipasang ke template
+// aktif ini (peran_kode dari VariabelRepository::variabelUntukTemplate(), sudah
+// scoped per template_surat_id) sebelum dipakai buat render/validasi/JS di bawah.
+$peranKodeDipakai = array_unique(array_filter(array_column($variabelList, 'peran_kode')));
+$peranDipakai = array_values(array_filter($jenisSurat['peran_pegawai'], function ($p) use ($peranKodeDipakai) {
+    return in_array($p['kode'], $peranKodeDipakai, true);
+}));
+
 $pesanError = '';
 
 if ($metode === 'POST') {
-    $pesanError = auratProsesGenerate($jenisSurat, $subJenisSuratId, $subJenisKode, $template, $variabelList, $variabelManual, $blokList);
+    $pesanError = auratProsesGenerate($jenisSurat, $subJenisSuratId, $subJenisKode, $template, $variabelList, $variabelManual, $blokList, $peranDipakai);
     // Kalau sukses, auratProsesGenerate() sudah exit() setelah stream dokumen — baris di bawah ini hanya jalan kalau gagal.
 }
 
@@ -295,10 +307,10 @@ require __DIR__ . '/../views/layout_atas.php';
       <input type="hidden" name="sub_jenis" value="<?php echo htmlspecialchars((string) $subJenisKode); ?>">
     <?php endif; ?>
 
-    <?php if (!empty($jenisSurat['peran_pegawai'])): ?>
+    <?php if (!empty($peranDipakai)): ?>
     <div class="form-section">
       <h4 style="font-family:var(--display); font-size:1rem;">Pegawai</h4>
-      <?php foreach ($jenisSurat['peran_pegawai'] as $peran): $pk = $peran['kode']; ?>
+      <?php foreach ($peranDipakai as $peran): $pk = $peran['kode']; ?>
         <div class="field">
           <label><?php echo htmlspecialchars((string) $peran['label']); ?> <?php if (!empty($peran['wajib'])): ?><span class="req">*</span><?php endif; ?></label>
           <input type="text" id="pegawaiCari_<?php echo htmlspecialchars((string) $pk); ?>" placeholder="Ketik nama pegawai&hellip;" autocomplete="off">
@@ -378,7 +390,7 @@ require __DIR__ . '/../views/layout_atas.php';
 <script src="<?php echo $rootAsset; ?>assets/js/pegawai-picker.js"></script>
 <script>
 (function(){
-  <?php foreach ($jenisSurat['peran_pegawai'] as $peran): $pk = $peran['kode']; ?>
+  <?php foreach ($peranDipakai as $peran): $pk = $peran['kode']; ?>
   AuratPicker.initTunggal(<?php echo json_encode(array(
       'inputId'          => 'pegawaiCari_' . $pk,
       'hasilId'          => 'pegawaiHasil_' . $pk,
@@ -401,7 +413,7 @@ require __DIR__ . '/../views/layout_atas.php';
   <?php endforeach; ?>
 
   document.getElementById('formSurat').addEventListener('submit', function(e){
-    <?php foreach ($jenisSurat['peran_pegawai'] as $peran): if (empty($peran['wajib'])) { continue; } $pk = $peran['kode']; ?>
+    <?php foreach ($peranDipakai as $peran): if (empty($peran['wajib'])) { continue; } $pk = $peran['kode']; ?>
     if (!document.getElementById('pegawaiId_<?php echo $pk; ?>').value) {
       e.preventDefault();
       alert('Pilih <?php echo htmlspecialchars(addslashes($peran['label'])); ?> terlebih dahulu.');
