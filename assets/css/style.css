@@ -2,6 +2,11 @@
   --paper:#F7F5F0; --surface:#FFFFFF; --surface-2:#F1EDE3; --ink:#20262C; --ink-dim:#727C74;
   --primary:#1E3E5C; --primary-soft:#E6EDF3; --primary-ink:#F7F5F0;
   --accent:#B8452F; --accent-soft:#F7E3DA; --accent-ink:#FBF3EC;
+  /* Badge status berlaku (surat_diterbitkan) - "kedaluwarsa" reuse --accent
+     soft/ink yang sudah ada (rust/merah, cocok makna "danger"), cuma
+     aktif/segera yang butuh token baru. */
+  --badge-aktif-bg:#E3F3E8; --badge-aktif-ink:#1E6B3A;
+  --badge-segera-bg:#FBF0DA; --badge-segera-ink:#92600A;
   /* Warna glow "aurora" (.has-glow, lihat blok di bawah) - -rgb ini CUMA
      dipakai buat itu, gak dipakai komponen lain (--accent/--primary hex di
      atas yg dipakai tombol/branding tetap gak disentuh). Mode terang: 4
@@ -28,6 +33,8 @@
     --paper:#15181B; --surface:#1C2024; --surface-2:#22262B; --ink:#E9E5DA; --ink-dim:#96A099;
     --primary:#7FA8CE; --primary-soft:#233240; --primary-ink:#0E1215;
     --accent:#E08267; --accent-soft:#3A2620; --accent-ink:#1A0F0C;
+    --badge-aktif-bg:#1B3324; --badge-aktif-ink:#7FD9A0;
+    --badge-segera-bg:#3A2E12; --badge-segera-ink:#E0AE5A;
     --primary-rgb:127,168,206; --accent-rgb:224,130,103; --aurora-plum-rgb:201,144,222; --aurora-teal-rgb:99,199,178;
     --border:#2A2F34; --border-strong:#3A4046;
     --shadow-sm: 0 1px 2px rgba(0,0,0,0.3); --shadow-md: 0 12px 30px rgba(0,0,0,0.38), 0 2px 8px rgba(0,0,0,0.3);
@@ -37,6 +44,8 @@
   --paper:#15181B; --surface:#1C2024; --surface-2:#22262B; --ink:#E9E5DA; --ink-dim:#96A099;
   --primary:#7FA8CE; --primary-soft:#233240; --primary-ink:#0E1215;
   --accent:#E08267; --accent-soft:#3A2620; --accent-ink:#1A0F0C;
+  --badge-aktif-bg:#1B3324; --badge-aktif-ink:#7FD9A0;
+  --badge-segera-bg:#3A2E12; --badge-segera-ink:#E0AE5A;
   --primary-rgb:127,168,206; --accent-rgb:224,130,103; --aurora-plum-rgb:201,144,222; --aurora-teal-rgb:99,199,178;
   --border:#2A2F34; --border-strong:#3A4046;
   --shadow-sm: 0 1px 2px rgba(0,0,0,0.3); --shadow-md: 0 12px 30px rgba(0,0,0,0.38), 0 2px 8px rgba(0,0,0,0.3);
@@ -70,6 +79,12 @@ a{color:inherit;}
 .alert{border-radius:var(--r-sm); padding:12px 16px; font-size:0.85rem; margin-bottom:18px;}
 .alert-error{background:var(--accent-soft); color:var(--ink);}
 .alert-info{background:var(--surface-2); color:var(--ink);}
+
+.badge{display:inline-block; padding:3px 10px; border-radius:var(--r-pill); font-size:0.74rem; font-weight:600;}
+.badge-aktif{background:var(--badge-aktif-bg); color:var(--badge-aktif-ink);}
+.badge-segera{background:var(--badge-segera-bg); color:var(--badge-segera-ink);}
+.badge-kedaluwarsa{background:var(--accent-soft); color:var(--accent);}
+.badge-belum-diisi{background:var(--surface-2); color:var(--ink-dim);}
 
 .shell{display:flex; min-height:100vh;}
 .sidebar{width:240px; flex:0 0 240px; background:var(--surface); border-right:1px solid var(--border); display:flex; flex-direction:column; padding:24px 16px; gap:24px; position:sticky; top:0; height:100vh;}

@@ -65,13 +65,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $kopSurat        = isset($_POST['kop_surat']) && trim($_POST['kop_surat']) !== '' ? trim($_POST['kop_surat']) : 'standar';
         $polaNamaUnduhan = isset($_POST['pola_nama_unduhan']) ? trim($_POST['pola_nama_unduhan']) : '';
         $urutanTampil    = isset($_POST['urutan_tampil']) ? (int) $_POST['urutan_tampil'] : 0;
+        $variabelNomor     = isset($_POST['variabel_nomor_kode']) ? trim($_POST['variabel_nomor_kode']) : '';
+        $variabelTanggal   = isset($_POST['variabel_tanggal_kode']) ? trim($_POST['variabel_tanggal_kode']) : '';
+        $variabelRingkasan = isset($_POST['variabel_ringkasan_kode']) ? trim($_POST['variabel_ringkasan_kode']) : '';
 
         if ($nama === '') {
             $pesan = 'Nama wajib diisi.';
             $pesanTipe = 'error';
         } else {
-            $pdo->prepare('UPDATE jenis_surat SET nama=?, deskripsi=?, icon=?, kop_surat=?, pola_nama_unduhan=?, urutan_tampil=?, updated_at=NOW() WHERE id=?')
-                ->execute(array($nama, $deskripsi !== '' ? $deskripsi : null, $icon, $kopSurat, $polaNamaUnduhan !== '' ? $polaNamaUnduhan : null, $urutanTampil, $id));
+            $pdo->prepare(
+                'UPDATE jenis_surat SET nama=?, deskripsi=?, icon=?, kop_surat=?, pola_nama_unduhan=?, urutan_tampil=?,
+                 variabel_nomor_kode=?, variabel_tanggal_kode=?, variabel_ringkasan_kode=?, updated_at=NOW() WHERE id=?'
+            )->execute(array(
+                $nama, $deskripsi !== '' ? $deskripsi : null, $icon, $kopSurat, $polaNamaUnduhan !== '' ? $polaNamaUnduhan : null, $urutanTampil,
+                $variabelNomor !== '' ? $variabelNomor : null, $variabelTanggal !== '' ? $variabelTanggal : null, $variabelRingkasan !== '' ? $variabelRingkasan : null,
+                $id,
+            ));
         }
         header('Location: jenis_surat.php?id=' . $id);
         exit;
@@ -127,6 +136,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $idDetail = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 $detail = $idDetail > 0 ? JenisSuratRepository::muatById($idDetail) : null;
+
+// Buat dropdown "field mana = nomor/tanggal/ringkasan" (ledger surat
+// diterbitkan) - daftar semua variabel yang PERNAH terpasang ke SALAH SATU
+// template jenis surat ini (lintas sub_jenis), bukan cuma variabel di
+// katalog global - biar admin gak milih field yang gak relevan sama sekali.
+$variabelUntukLedger = array();
+if ($detail) {
+    $stmt = $pdo->prepare(
+        'SELECT DISTINCT v.kode, v.label FROM variabel_surat v
+         JOIN template_surat_variabel tsv ON tsv.variabel_surat_id = v.id
+         JOIN template_surat ts ON ts.id = tsv.template_surat_id
+         WHERE ts.jenis_surat_id = ? ORDER BY v.kode'
+    );
+    $stmt->execute(array($idDetail));
+    $variabelUntukLedger = $stmt->fetchAll();
+}
 
 $daftarJenisSurat = $pdo->query('SELECT * FROM jenis_surat ORDER BY urutan_tampil, nama')->fetchAll();
 
@@ -278,6 +303,32 @@ require __DIR__ . '/../views/layout_atas.php';
         <label>Deskripsi</label>
         <textarea name="deskripsi"><?php echo htmlspecialchars((string) $detail['deskripsi']); ?></textarea>
       </div>
+
+      <h4 style="font-family:var(--display); font-size:0.92rem; margin:20px 0 4px;">Ledger Surat Diterbitkan</h4>
+      <p class="note" style="margin-bottom:12px;">
+        Pilih field mana yang jadi kolom Nomor/Tanggal/Ringkasan di daftar
+        <a href="surat_diterbitkan.php?jenis_surat_id=<?php echo (int) $detail['id']; ?>">Riwayat Surat Diterbitkan</a>
+        - opsional, kosongkan kalau gak perlu. Isi form (semua field) tetap
+        kerekam lengkap walau ini gak di-set.
+      </p>
+      <div class="grid-2">
+        <?php
+        $renderDropdownVariabel = function ($nameField, $labelField, $nilaiSekarang) use ($variabelUntukLedger) {
+            echo '<div class="field"><label>' . htmlspecialchars($labelField) . '</label><select name="' . htmlspecialchars($nameField) . '">';
+            echo '<option value="">(tidak dipakai)</option>';
+            foreach ($variabelUntukLedger as $v) {
+                $selected = ($v['kode'] === $nilaiSekarang) ? ' selected' : '';
+                echo '<option value="' . htmlspecialchars((string) $v['kode']) . '"' . $selected . '>'
+                    . htmlspecialchars((string) $v['label']) . ' (' . htmlspecialchars((string) $v['kode']) . ')</option>';
+            }
+            echo '</select></div>';
+        };
+        $renderDropdownVariabel('variabel_nomor_kode', 'Field Nomor', $detail['variabel_nomor_kode']);
+        $renderDropdownVariabel('variabel_tanggal_kode', 'Field Tanggal', $detail['variabel_tanggal_kode']);
+        $renderDropdownVariabel('variabel_ringkasan_kode', 'Field Ringkasan', $detail['variabel_ringkasan_kode']);
+        ?>
+      </div>
+
       <button type="submit" class="btn btn-primary">Simpan Perubahan</button>
     </form>
   </div>

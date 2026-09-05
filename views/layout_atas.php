@@ -57,6 +57,7 @@ foreach (JenisSuratRepository::semua(true) as $js) {
         <span class="nav-label">Kelola</span>
         <a class="nav-item <?php echo $halamanAktif === 'pegawai' ? 'active' : ''; ?>" href="<?php echo isset($rootAsset) ? $rootAsset : ''; ?>pegawai.php">Data Pegawai</a>
         <a class="nav-item <?php echo $halamanAktif === 'admin_jenis_surat' ? 'active' : ''; ?>" href="<?php echo isset($rootAsset) ? $rootAsset : ''; ?>admin/jenis_surat.php">Kelola Jenis Surat</a>
+        <a class="nav-item <?php echo $halamanAktif === 'admin_surat_diterbitkan' ? 'active' : ''; ?>" href="<?php echo isset($rootAsset) ? $rootAsset : ''; ?>admin/surat_diterbitkan.php">Riwayat Surat Diterbitkan</a>
         <?php if (Auth::isAdmin()): ?>
         <a class="nav-item <?php echo $halamanAktif === 'admin_user_login' ? 'active' : ''; ?>" href="<?php echo isset($rootAsset) ? $rootAsset : ''; ?>admin/user_login.php">Kelola Pengguna</a>
         <?php endif; ?>

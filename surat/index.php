@@ -15,6 +15,7 @@ use Aurat\Surat\TemplateSuratRepository;
 use Aurat\Surat\VariabelRepository;
 use Aurat\Surat\BlokTabelRepository;
 use Aurat\Surat\NilaiResolver;
+use Aurat\Surat\SuratDiterbitkanRepository;
 
 Auth::requireLogin();
 
@@ -182,6 +183,19 @@ function auratProsesGenerate(array $jenisSurat, $subJenisSuratId, $subJenisKode,
     }
 
     $namaUnduhan = auratNamaUnduhan($jenisSurat, $subJenisKode, $nilai);
+
+    // Rekam ke ledger (surat_diterbitkan) - dibungkus try/catch sendiri,
+    // gagal nyimpen histori TIDAK BOLEH menghalangi dokumen tetap terbit
+    // (sama prinsip kayak notifikasi WA di RESTU: fitur sekunder gak pernah
+    // memblokir alur utama).
+    try {
+        SuratDiterbitkanRepository::catat(
+            $jenisSurat, $subJenisSuratId, (int) $template['id'], $nilai,
+            isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null
+        );
+    } catch (\Throwable $e) {
+        error_log('[AURA] Gagal mencatat surat_diterbitkan: ' . $e->getMessage());
+    }
 
     try {
         DocxGenerator::generateDanUnduh(TemplateSuratRepository::path($template), $nilai, $tabel, $namaUnduhan);
