@@ -30,6 +30,7 @@ class NilaiResolver
         'narasi_penunjukan_plh' => array('Aurat\Formatter', 'narasiPenunjukanPlh'),
         'narasi_pelaksanaan_tugas' => array('Aurat\Formatter', 'narasiPelaksanaanTugas'),
         'jabatan_satuan_kerja'  => array('Aurat\Formatter', 'jabatanSatuanKerja'),
+        'nomor_surat_otomatis'  => array('Aurat\Formatter', 'nomorSuratOtomatis'),
     );
 
     /** Kolom pegawai yang boleh dipakai sebagai field_pegawai — whitelist tetap, bukan dari input. */

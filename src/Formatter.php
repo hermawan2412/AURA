@@ -232,4 +232,37 @@ class Formatter
             . ' pada tanggal ' . self::tanggalIndonesia($tanggalPelaksanaanYmd)
             . ' karena ' . $jabatan . ' ' . $alasanFinal . $klausaDasar;
     }
+
+    private static $bulanRomawi = array(
+        1 => 'I', 2 => 'II', 3 => 'III', 4 => 'IV', 5 => 'V', 6 => 'VI',
+        7 => 'VII', 8 => 'VIII', 9 => 'IX', 10 => 'X', 11 => 'XI', 12 => 'XII',
+    );
+
+    /**
+     * Nomor surat lengkap otomatis: "{nomor_urut}/{kode_klasifikasi}/{bulan_romawi}/{tahun}"
+     * - bulan/tahun dari tanggal dokumennya sendiri, kode_klasifikasi FIXED
+     * per jenis_surat (diisi admin sbg fungsi_parameter_1 pas masang
+     * variabel turunan ini ke template - lihat db/025_nomor_surat_otomatis.sql
+     * utk contoh, atau catatan project_aurat_mail_app.md). Sama pola dgn
+     * nomorSuratCuti() di RESTU/AURAT, cuma kode_klasifikasi-nya di sini
+     * PARAMETER (admin-configurable per jenis surat), bukan hardcoded per
+     * fungsi - AURA satu jenis_surat bisa beda kode klasifikasi tanpa perlu
+     * fungsi PHP baru tiap kali.
+     */
+    public static function nomorSuratOtomatis($nomorUrut, $tanggalYmd, $kodeKlasifikasi)
+    {
+        $nomorUrut = trim((string) $nomorUrut);
+        $kodeKlasifikasi = trim((string) $kodeKlasifikasi);
+        if ($nomorUrut === '' || $kodeKlasifikasi === '') {
+            return '';
+        }
+        $waktu = strtotime((string) $tanggalYmd);
+        if ($waktu === false) {
+            return '';
+        }
+        $romawi = self::$bulanRomawi[(int) date('n', $waktu)];
+        $tahun = date('Y', $waktu);
+
+        return $nomorUrut . '/' . $kodeKlasifikasi . '/' . $romawi . '/' . $tahun;
+    }
 }
