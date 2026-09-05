@@ -239,21 +239,37 @@ class Formatter
     );
 
     /**
-     * Nomor surat lengkap otomatis: "{nomor_urut}/{kode_klasifikasi}/{bulan_romawi}/{tahun}"
-     * - bulan/tahun dari tanggal dokumennya sendiri, kode_klasifikasi FIXED
-     * per jenis_surat (diisi admin sbg fungsi_parameter_1 pas masang
-     * variabel turunan ini ke template - lihat db/025_nomor_surat_otomatis.sql
-     * utk contoh, atau catatan project_aurat_mail_app.md). Sama pola dgn
-     * nomorSuratCuti() di RESTU/AURAT, cuma kode_klasifikasi-nya di sini
-     * PARAMETER (admin-configurable per jenis surat), bukan hardcoded per
-     * fungsi - AURA satu jenis_surat bisa beda kode klasifikasi tanpa perlu
-     * fungsi PHP baru tiap kali.
+     * Nomor surat lengkap otomatis, format nyata dari user (contoh:
+     * "1697/WKPA.W15-A8/UND.KP3.4.3/IX/2026"):
+     *   {nomor_urut}/{kode_penandatangan}.{kode_satker}/{kode_jenis_surat}/{bulan_romawi}/{tahun}
+     * - bulan/tahun dari tanggal dokumennya sendiri. kode_penandatangan
+     *   (KPA/WKPA/PAN/SEK, lihat $kodePenandatangan di bawah) beda-beda
+     *   tergantung SIAPA yang tanda tangan dokumen itu - bukan tetap per
+     *   jenis_surat kayak kode_satker (satu nilai, semua surat, dari
+     *   pengaturan_aplikasi) atau kode_jenis_surat (tetap per jenis_surat,
+     *   dari jenis_surat.kode_klasifikasi).
+     *
+     * $penandatangan SENGAJA nerima baris pegawai MENTAH (array) ATAU teks
+     * jabatan langsung (string), BUKAN kode KPA/WKPA/dst yang sudah
+     * di-map - resolusi jabatan->kode dikerjakan DI DALAM fungsi ini
+     * sendiri (bukan lewat fungsi_pasca terpisah kayak kodePenandatangan
+     * DariJabatan() yang dipanggil dari variabel lain), krn turunan di
+     * NilaiResolver mewarisi nilai MENTAH parameternya (sebelum fungsi_
+     * pasca diterapkan) - fungsi_pasca kedua di variabel parameter gak
+     * pernah kepanggil kalau dipakai sbg parameter turunan lain. Lihat
+     * catatan sama persis di project_aurat_mail_app.php soal
+     * sdTanggalKlausa()/nama_dan_nip() dulu - gotcha yg sama, solusi yg
+     * sama (satu fungsi ngerjain semuanya, bukan dirantai).
      */
-    public static function nomorSuratOtomatis($nomorUrut, $tanggalYmd, $kodeKlasifikasi)
+    public static function nomorSuratOtomatis($nomorUrut, $tanggalYmd, $penandatangan, $kodeSatker, $kodeJenisSurat)
     {
         $nomorUrut = trim((string) $nomorUrut);
-        $kodeKlasifikasi = trim((string) $kodeKlasifikasi);
-        if ($nomorUrut === '' || $kodeKlasifikasi === '') {
+        $kodePenandatangan = is_array($penandatangan)
+            ? self::kodePenandatanganDariJabatan($penandatangan)
+            : self::kodePenandatanganDariTeks($penandatangan);
+        $kodeSatker = trim((string) $kodeSatker);
+        $kodeJenisSurat = trim((string) $kodeJenisSurat);
+        if ($nomorUrut === '' || $kodePenandatangan === '' || $kodeSatker === '' || $kodeJenisSurat === '') {
             return '';
         }
         $waktu = strtotime((string) $tanggalYmd);
@@ -263,6 +279,29 @@ class Formatter
         $romawi = self::$bulanRomawi[(int) date('n', $waktu)];
         $tahun = date('Y', $waktu);
 
-        return $nomorUrut . '/' . $kodeKlasifikasi . '/' . $romawi . '/' . $tahun;
+        return $nomorUrut . '/' . $kodePenandatangan . '.' . $kodeSatker . '/' . $kodeJenisSurat . '/' . $romawi . '/' . $tahun;
+    }
+
+    /**
+     * KPA/WKPA/PAN/SEK dari jabatan pegawai penandatangan - cuma 4 ini yang
+     * pernah jadi penandatangan resmi (dikonfirmasi user 2026-09-05, bukan
+     * daftar admin-editable krn jarang berubah). Jabatan lain (mis.
+     * "PANITERA MUDA HUKUM") SENGAJA gak match "PANITERA" - harus exact,
+     * bukan substring, beda jabatan beneran walau namanya mirip.
+     */
+    private static $kodePenandatangan = array(
+        'KETUA' => 'KPA', 'WAKIL KETUA' => 'WKPA', 'PANITERA' => 'PAN', 'SEKRETARIS' => 'SEK',
+    );
+
+    public static function kodePenandatanganDariJabatan(array $pegawai)
+    {
+        return self::kodePenandatanganDariTeks(isset($pegawai['jabatan']) ? $pegawai['jabatan'] : '');
+    }
+
+    /** Sama kayak kodePenandatanganDariJabatan() tapi nerima teks jabatan langsung, bukan baris pegawai - dipakai surat_perintah_plh (penandatangannya dari dropdown jabatan_diplh, bukan pegawai-picker). */
+    public static function kodePenandatanganDariTeks($jabatanTeks)
+    {
+        $jabatan = strtoupper(trim((string) $jabatanTeks));
+        return isset(self::$kodePenandatangan[$jabatan]) ? self::$kodePenandatangan[$jabatan] : '';
     }
 }

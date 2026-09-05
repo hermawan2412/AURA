@@ -181,6 +181,13 @@ function auratProsesGenerate(array $jenisSurat, $subJenisSuratId, $subJenisKode,
         // yang lagi diproses, bukan hardcode - satu definisi variabel
         // dipakai bareng semua jenis surat.
         'kode_klasifikasi' => isset($jenisSurat['kode_klasifikasi']) ? (string) $jenisSurat['kode_klasifikasi'] : '',
+        // Dipakai variabel 'kode_satker_surat' - SATU nilai tetap semua
+        // jenis surat (beda dari kode_klasifikasi di atas yang per jenis
+        // surat), diatur admin lewat admin/pengaturan.php.
+        'kode_satker' => (function () {
+            $baris = Database::pdo()->query('SELECT kode_satker FROM pengaturan_aplikasi WHERE id = 1')->fetch();
+            return $baris && $baris['kode_satker'] !== null ? (string) $baris['kode_satker'] : '';
+        })(),
     );
     try {
         $resolver = new NilaiResolver($variabelList, $inputManual, $pegawaiTerpilih, $konteksSistem);

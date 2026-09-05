@@ -308,11 +308,12 @@ require __DIR__ . '/../views/layout_atas.php';
 
       <h4 style="font-family:var(--display); font-size:0.92rem; margin:20px 0 4px;">Nomor Surat Otomatis</h4>
       <p class="note" style="margin-bottom:12px;">
-        Kode klasifikasi (bagian TETAP nomor surat, mis. "KPA.W15-A8/OT.01")
-        - kalau diisi, jenis surat yang variabel "Nomor"-nya dipasang ke
-        <code>nomor_surat_otomatis</code> bakal nyusun nomor lengkap otomatis:
-        <code>{nomor urut}/{kode ini}/{bulan romawi}/{tahun}</code> - bulan &amp; tahun
-        ngikutin tanggal surat itu sendiri. Kosongkan kalau jenis surat ini
+        Kode klasifikasi jenis surat ini SAJA (mis. "UND.KP3.4.3") - bagian
+        TETAP nomor surat yang beda-beda per jenis surat. Nomor lengkap
+        tersusun: <code>{nomor urut}/{kode penandatangan}.{kode satker}/{kode ini}/{bulan romawi}/{tahun}</code>
+        - kode penandatangan otomatis dari jabatan yang tanda tangan (KPA/WKPA/PAN/SEK),
+        kode satker diatur sekali di <a href="pengaturan.php">Pengaturan Aplikasi</a>
+        (sama buat semua jenis surat). Kosongkan kalau jenis surat ini
         nomornya diisi manual apa adanya.
       </p>
       <div class="field" style="max-width:400px; margin-bottom:16px;">

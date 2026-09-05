@@ -31,6 +31,13 @@ class NilaiResolver
         'narasi_pelaksanaan_tugas' => array('Aurat\Formatter', 'narasiPelaksanaanTugas'),
         'jabatan_satuan_kerja'  => array('Aurat\Formatter', 'jabatanSatuanKerja'),
         'nomor_surat_otomatis'  => array('Aurat\Formatter', 'nomorSuratOtomatis'),
+        // Dipasang ke variabel kode_penandatangan_* SEKEDAR biar resolveSemua()
+        // gak crash pas nilaiAkhir() dipanggil ATAS variabel ini SENDIRI (setiap
+        // variabel yg terpasang ke template diproses standalone, bukan cuma yg
+        // dipakai sbg parameter) - nomorSuratOtomatis() TIDAK bergantung ke
+        // fungsi_pasca ini (dia baca nilaiMentah() yg selalu array mentah,
+        // terlepas apa fungsi_pasca-nya), jadi 2 hal ini gak saling ganggu.
+        'kode_penandatangan_dari_jabatan' => array('Aurat\Formatter', 'kodePenandatanganDariJabatan'),
     );
 
     /** Kolom pegawai yang boleh dipakai sebagai field_pegawai — whitelist tetap, bukan dari input. */
