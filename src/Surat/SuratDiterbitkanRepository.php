@@ -108,7 +108,7 @@ class SuratDiterbitkanRepository
     /**
      * Status badge dari berlaku_sampai: null=belum diisi admin, "aktif",
      * "segera" (<=60 hari lagi), "kedaluwarsa". Ambang 60 hari - sama pola
-     * yang sudah dipakai KGB/KNP di app sebelah (RESTU/AURAT), bukan angka
+     * yang sudah dipakai KGB/KNP di app sebelah (RESTU), bukan angka
      * baru dikarang di sini.
      */
     public static function statusBerlaku($berlakuSampai)
