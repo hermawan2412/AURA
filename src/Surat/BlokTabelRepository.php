@@ -40,11 +40,22 @@ class BlokTabelRepository
             }
         }
 
+        // nonaktif=1 pada baris override berarti: sub_jenis ini SENGAJA gak
+        // punya blok ini sama sekali (mis. sk/umum yang gak punya lampiran
+        // daftar pegawai, beda dari tim_kerja/panitia yang defaultnya
+        // berlaku) - bukan "ganti kolom" kayak override biasa, makanya di-
+        // unset, bukan diganti isinya.
         $hasil = array();
         foreach ($default as $blok) {
+            if (isset($override[$blok['kode']]) && !empty($override[$blok['kode']]['nonaktif'])) {
+                continue;
+            }
             $hasil[$blok['kode']] = isset($override[$blok['kode']]) ? $override[$blok['kode']] : $blok;
         }
         foreach ($override as $kode => $blok) {
+            if (!empty($blok['nonaktif'])) {
+                continue;
+            }
             if (!isset($hasil[$kode])) {
                 $hasil[$kode] = $blok; // override tanpa padanan default = blok khusus sub_jenis ini
             }
