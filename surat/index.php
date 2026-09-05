@@ -174,7 +174,14 @@ function auratProsesGenerate(array $jenisSurat, $subJenisSuratId, $subJenisKode,
     }
 
     // --- 6. Resolusi nilai variabel ---
-    $konteksSistem = array('tanggal_sekarang' => date('Y-m-d'));
+    $konteksSistem = array(
+        'tanggal_sekarang' => date('Y-m-d'),
+        // Dipakai variabel 'kode_klasifikasi_surat' (sumber=sistem) - basis
+        // nomor_surat_otomatis(). Resolve ke kode_klasifikasi JENIS SURAT
+        // yang lagi diproses, bukan hardcode - satu definisi variabel
+        // dipakai bareng semua jenis surat.
+        'kode_klasifikasi' => isset($jenisSurat['kode_klasifikasi']) ? (string) $jenisSurat['kode_klasifikasi'] : '',
+    );
     try {
         $resolver = new NilaiResolver($variabelList, $inputManual, $pegawaiTerpilih, $konteksSistem);
         $nilai = $resolver->resolveSemua();

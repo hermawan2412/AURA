@@ -68,6 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $variabelNomor     = isset($_POST['variabel_nomor_kode']) ? trim($_POST['variabel_nomor_kode']) : '';
         $variabelTanggal   = isset($_POST['variabel_tanggal_kode']) ? trim($_POST['variabel_tanggal_kode']) : '';
         $variabelRingkasan = isset($_POST['variabel_ringkasan_kode']) ? trim($_POST['variabel_ringkasan_kode']) : '';
+        $kodeKlasifikasi   = isset($_POST['kode_klasifikasi']) ? trim($_POST['kode_klasifikasi']) : '';
 
         if ($nama === '') {
             $pesan = 'Nama wajib diisi.';
@@ -75,10 +76,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $pdo->prepare(
                 'UPDATE jenis_surat SET nama=?, deskripsi=?, icon=?, kop_surat=?, pola_nama_unduhan=?, urutan_tampil=?,
-                 variabel_nomor_kode=?, variabel_tanggal_kode=?, variabel_ringkasan_kode=?, updated_at=NOW() WHERE id=?'
+                 variabel_nomor_kode=?, variabel_tanggal_kode=?, variabel_ringkasan_kode=?, kode_klasifikasi=?, updated_at=NOW() WHERE id=?'
             )->execute(array(
                 $nama, $deskripsi !== '' ? $deskripsi : null, $icon, $kopSurat, $polaNamaUnduhan !== '' ? $polaNamaUnduhan : null, $urutanTampil,
                 $variabelNomor !== '' ? $variabelNomor : null, $variabelTanggal !== '' ? $variabelTanggal : null, $variabelRingkasan !== '' ? $variabelRingkasan : null,
+                $kodeKlasifikasi !== '' ? $kodeKlasifikasi : null,
                 $id,
             ));
         }
@@ -302,6 +304,20 @@ require __DIR__ . '/../views/layout_atas.php';
       <div class="field">
         <label>Deskripsi</label>
         <textarea name="deskripsi"><?php echo htmlspecialchars((string) $detail['deskripsi']); ?></textarea>
+      </div>
+
+      <h4 style="font-family:var(--display); font-size:0.92rem; margin:20px 0 4px;">Nomor Surat Otomatis</h4>
+      <p class="note" style="margin-bottom:12px;">
+        Kode klasifikasi (bagian TETAP nomor surat, mis. "KPA.W15-A8/OT.01")
+        - kalau diisi, jenis surat yang variabel "Nomor"-nya dipasang ke
+        <code>nomor_surat_otomatis</code> bakal nyusun nomor lengkap otomatis:
+        <code>{nomor urut}/{kode ini}/{bulan romawi}/{tahun}</code> - bulan &amp; tahun
+        ngikutin tanggal surat itu sendiri. Kosongkan kalau jenis surat ini
+        nomornya diisi manual apa adanya.
+      </p>
+      <div class="field" style="max-width:400px; margin-bottom:16px;">
+        <label>Kode Klasifikasi</label>
+        <input type="text" name="kode_klasifikasi" value="<?php echo htmlspecialchars((string) $detail['kode_klasifikasi']); ?>" placeholder="mis. KPA.W15-A8/OT.01">
       </div>
 
       <h4 style="font-family:var(--display); font-size:0.92rem; margin:20px 0 4px;">Ledger Surat Diterbitkan</h4>
