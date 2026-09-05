@@ -10,7 +10,7 @@ use Aurat\Surat\VariabelRepository;
 use Aurat\Surat\TemplateUpload;
 use Aurat\Surat\NilaiResolver;
 
-Auth::requireLogin();
+Auth::requirePengelolaAtauAdmin();
 
 $templateSuratId = isset($_GET['template_surat_id']) ? (int) $_GET['template_surat_id']
     : (isset($_POST['template_surat_id']) ? (int) $_POST['template_surat_id'] : 0);

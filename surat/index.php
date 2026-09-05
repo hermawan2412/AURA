@@ -230,6 +230,10 @@ if (!$jenisSurat || (int) $jenisSurat['status_aktif'] !== 1) {
     http_response_code(404);
     exit('Jenis surat "' . htmlspecialchars((string) $kode) . '" tidak ditemukan atau tidak aktif.');
 }
+if (!Auth::bolehAksesJenisSurat($kode)) {
+    http_response_code(403);
+    exit('Akses ditolak — peran Anda tidak diizinkan membuat jenis surat ini.');
+}
 
 $metode = $_SERVER['REQUEST_METHOD'];
 if ($metode === 'POST') {

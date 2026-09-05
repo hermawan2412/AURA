@@ -8,7 +8,7 @@ use Aurat\Database;
 use Aurat\Surat\IconLibrary;
 use Aurat\Surat\JenisSuratRepository;
 
-Auth::requireLogin();
+Auth::requirePengelolaAtauAdmin();
 
 $pdo = Database::pdo();
 $pesan = '';

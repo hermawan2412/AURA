@@ -13,6 +13,9 @@ use Aurat\Surat\JenisSuratRepository;
 
 $menuSurat = array();
 foreach (JenisSuratRepository::semua(true) as $js) {
+    if (!Auth::bolehAksesJenisSurat($js['kode'])) {
+        continue; // peran 'pengguna' - sembunyikan jenis surat yg gak boleh diakses
+    }
     $menuSurat[] = array(
         'kode'  => $js['kode'],
         'label' => $js['nama'],
@@ -53,6 +56,7 @@ foreach (JenisSuratRepository::semua(true) as $js) {
         </a>
         <?php endforeach; ?>
       </div>
+      <?php if (Auth::isPengelolaAtauAdmin()): ?>
       <div class="nav-group">
         <span class="nav-label">Kelola</span>
         <a class="nav-item <?php echo $halamanAktif === 'pegawai' ? 'active' : ''; ?>" href="<?php echo isset($rootAsset) ? $rootAsset : ''; ?>pegawai.php">Data Pegawai</a>
@@ -63,6 +67,7 @@ foreach (JenisSuratRepository::semua(true) as $js) {
         <a class="nav-item <?php echo $halamanAktif === 'admin_pengaturan' ? 'active' : ''; ?>" href="<?php echo isset($rootAsset) ? $rootAsset : ''; ?>admin/pengaturan.php">Pengaturan Aplikasi</a>
         <?php endif; ?>
       </div>
+      <?php endif; ?>
     </nav>
 
     <div class="sidebar-footer">

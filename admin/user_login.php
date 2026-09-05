@@ -24,7 +24,12 @@ function auratJumlahAktif(PDO $pdo)
 
 function auratJumlahAdmin(PDO $pdo)
 {
-    return (int) $pdo->query('SELECT COUNT(*) FROM user_login WHERE is_admin = 1')->fetchColumn();
+    return (int) $pdo->query("SELECT COUNT(*) FROM user_login WHERE peran = 'admin'")->fetchColumn();
+}
+
+function auratPeranValid($peran)
+{
+    return in_array($peran, array('pengguna', 'pengelola', 'admin'), true);
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -36,15 +41,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $username      = isset($_POST['username']) ? trim($_POST['username']) : '';
         $namaTampilan  = isset($_POST['nama_tampilan']) ? trim($_POST['nama_tampilan']) : '';
         $password      = isset($_POST['password']) ? $_POST['password'] : '';
-        $isAdmin       = !empty($_POST['is_admin']) ? 1 : 0;
+        $peran         = isset($_POST['peran']) ? $_POST['peran'] : 'pengguna';
 
-        if (!auratUsernameValid($username) || $namaTampilan === '' || $password === '') {
+        if (!auratUsernameValid($username) || $namaTampilan === '' || $password === '' || !auratPeranValid($peran)) {
             $pesan = 'Nama pengguna (huruf/angka/titik/underscore, diawali huruf), Nama Tampilan, dan Kata Sandi wajib diisi dengan benar.';
             $pesanTipe = 'error';
         } else {
-            $stmt = $pdo->prepare('INSERT INTO user_login (username, password_hash, nama_tampilan, is_admin) VALUES (?, ?, ?, ?)');
+            $stmt = $pdo->prepare('INSERT INTO user_login (username, password_hash, nama_tampilan, peran) VALUES (?, ?, ?, ?)');
             try {
-                $stmt->execute(array($username, password_hash($password, PASSWORD_DEFAULT), $namaTampilan, $isAdmin));
+                $stmt->execute(array($username, password_hash($password, PASSWORD_DEFAULT), $namaTampilan, $peran));
                 header('Location: user_login.php');
                 exit;
             } catch (\PDOException $e) {
@@ -95,26 +100,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $pdo->prepare('UPDATE user_login SET status_aktif = 1 - status_aktif, updated_at = NOW() WHERE id = ?')->execute(array($id));
             }
         }
-    } elseif ($aksi === 'toggle_admin' && isset($_POST['id'])) {
+    } elseif ($aksi === 'ubah_peran' && isset($_POST['id'])) {
         $id = (int) $_POST['id'];
-        $baris = $pdo->prepare('SELECT is_admin FROM user_login WHERE id = ?');
+        $peranBaru = isset($_POST['peran']) ? $_POST['peran'] : '';
+        $baris = $pdo->prepare('SELECT peran FROM user_login WHERE id = ?');
         $baris->execute(array($id));
-        $adminSaatIni = (int) $baris->fetchColumn();
+        $peranSaatIni = $baris->fetchColumn();
 
-        if ($adminSaatIni === 1 && $id === (int) $_SESSION['user_id']) {
+        if (!auratPeranValid($peranBaru)) {
+            $pesan = 'Peran tidak valid.';
+            $pesanTipe = 'error';
+        } elseif ($peranSaatIni === 'admin' && $id === (int) $_SESSION['user_id'] && $peranBaru !== 'admin') {
             $pesan = 'Tidak bisa mencabut peran admin dari akun yang sedang dipakai login saat ini.';
             $pesanTipe = 'error';
-        } elseif ($adminSaatIni === 1 && auratJumlahAdmin($pdo) <= 1) {
+        } elseif ($peranSaatIni === 'admin' && $peranBaru !== 'admin' && auratJumlahAdmin($pdo) <= 1) {
             $pesan = 'Tidak bisa mencabut peran admin — minimal harus ada 1 administrator.';
             $pesanTipe = 'error';
         } else {
-            $pdo->prepare('UPDATE user_login SET is_admin = 1 - is_admin, updated_at = NOW() WHERE id = ?')->execute(array($id));
+            $pdo->prepare('UPDATE user_login SET peran = ?, updated_at = NOW() WHERE id = ?')->execute(array($peranBaru, $id));
         }
     } elseif ($aksi === 'hapus' && isset($_POST['id'])) {
         $id = (int) $_POST['id'];
-        $baris = $pdo->prepare('SELECT is_admin FROM user_login WHERE id = ?');
+        $baris = $pdo->prepare('SELECT peran FROM user_login WHERE id = ?');
         $baris->execute(array($id));
-        $adminSaatIni = (int) $baris->fetchColumn();
+        $peranSaatIni = $baris->fetchColumn();
 
         if ($id === (int) $_SESSION['user_id']) {
             $pesan = 'Tidak bisa menghapus akun yang sedang dipakai login saat ini.';
@@ -122,7 +131,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } elseif ($pdo->query('SELECT COUNT(*) FROM user_login')->fetchColumn() <= 1) {
             $pesan = 'Tidak bisa menghapus — minimal harus ada 1 akun.';
             $pesanTipe = 'error';
-        } elseif ($adminSaatIni === 1 && auratJumlahAdmin($pdo) <= 1) {
+        } elseif ($peranSaatIni === 'admin' && auratJumlahAdmin($pdo) <= 1) {
             $pesan = 'Tidak bisa menghapus — minimal harus ada 1 administrator.';
             $pesanTipe = 'error';
         } else {
@@ -169,9 +178,13 @@ require __DIR__ . '/../views/layout_atas.php';
         <input type="password" name="password" autocomplete="new-password" required>
       </div>
     </div>
-    <div class="field" style="flex-direction:row; align-items:center; gap:8px;">
-      <input type="checkbox" name="is_admin" id="isAdminBaru" value="1" style="width:auto;">
-      <label for="isAdminBaru" style="margin:0;">Jadikan administrator (bisa membuka Kelola Pengguna)</label>
+    <div class="field">
+      <label>Peran</label>
+      <select name="peran">
+        <option value="pengguna">Pengguna (hanya Surat Izin Keluar Kantor)</option>
+        <option value="pengelola">Pengelola (semua fungsi kecuali Kelola Pengguna &amp; Pengaturan)</option>
+        <option value="admin">Administrator (akses penuh)</option>
+      </select>
     </div>
     <div style="display:flex; gap:10px;">
       <button type="submit" class="btn btn-primary">Simpan</button>
@@ -192,16 +205,23 @@ require __DIR__ . '/../views/layout_atas.php';
         <tr>
           <td class="tnum"><?php echo htmlspecialchars((string) $u['username']); ?><?php echo ((int) $u['id'] === (int) $_SESSION['user_id']) ? ' <span style="font-size:0.7rem; color:var(--ink-dim);">(Anda)</span>' : ''; ?></td>
           <td><?php echo htmlspecialchars((string) $u['nama_tampilan']); ?></td>
-          <td><?php if ((int) $u['is_admin'] === 1): ?><span class="kind" style="align-self:flex-start;">Administrator</span><?php else: ?>Pengguna<?php endif; ?></td>
+          <td><?php
+            $labelPeran = array('pengguna' => 'Pengguna', 'pengelola' => 'Pengelola', 'admin' => 'Administrator');
+            if ($u['peran'] === 'admin'): ?><span class="kind" style="align-self:flex-start;">Administrator</span><?php else: echo htmlspecialchars($labelPeran[$u['peran']]); endif; ?></td>
           <td><?php echo ((int) $u['status_aktif'] === 1) ? 'Aktif' : 'Nonaktif'; ?></td>
           <td><?php echo $u['login_terakhir_at'] ? htmlspecialchars((string) $u['login_terakhir_at']) : '—'; ?></td>
           <td style="display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;">
             <button type="button" class="btn btn-secondary" onclick="document.getElementById('resetPass_<?php echo (int) $u['id']; ?>').style.display='flex'">Reset Sandi</button>
-            <form method="post" action="user_login.php" style="display:inline;">
+            <form method="post" action="user_login.php" style="display:inline; align-items:center; gap:4px;">
                 <?php echo Csrf::field(); ?>
-              <input type="hidden" name="aksi" value="toggle_admin">
+              <input type="hidden" name="aksi" value="ubah_peran">
               <input type="hidden" name="id" value="<?php echo (int) $u['id']; ?>">
-              <button type="submit" class="btn btn-secondary"><?php echo ((int) $u['is_admin'] === 1) ? 'Cabut Admin' : 'Jadikan Admin'; ?></button>
+              <select name="peran" onchange="this.form.submit()">
+                <?php foreach (array('pengguna', 'pengelola', 'admin') as $p): ?>
+                  <option value="<?php echo $p; ?>" <?php echo ($u['peran'] === $p) ? 'selected' : ''; ?>><?php echo $labelPeran[$p]; ?></option>
+                <?php endforeach; ?>
+              </select>
+              <noscript><button type="submit" class="btn btn-secondary">Ubah Peran</button></noscript>
             </form>
             <form method="post" action="user_login.php" style="display:inline;">
                 <?php echo Csrf::field(); ?>

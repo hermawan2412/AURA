@@ -29,17 +29,18 @@
 //
 // TAHAP 2 (ditambah 2026-09-05): sync AKUN LOGIN dari RESTU juga (user_login
 // + kolom nip baru, db/030) - AURA sebelumnya cuma 1 akun generik
-// (admin.kepegawaian), semua jenis surat sebenarnya udah kebuka buat siapa
-// aja yang login, jadi yang kurang cuma AKUN per-pegawai, bukan sistem izin
-// baru (dikonfirmasi user - akses tetap penuh spt sekarang).
+// (admin.kepegawaian), butuh AKUN per-pegawai spy tiap pegawai bisa pakai
+// surat izin keluar kantor sendiri-sendiri.
 // - Password DISINKRON (dikonfirmasi user: 1 kredensial buat 2 app) - dicek
 //   dulu hash RESTU beneran bcrypt ($2y$...), password_verify() PHP
 //   universal terhadap format itu terlepas app mana yang bikin hash-nya,
 //   jadi aman disalin mentah, BUKAN re-hash/re-encode apa pun.
-// - is_admin CUMA di-set dari role RESTU (Admin->1/User->0) pas akun
-//   PERTAMA KALI dibuat - update berikutnya GAK PERNAH nimpa is_admin,
-//   biar admin AURA bisa promosikan manual tanpa ke-demote lagi besoknya
-//   (beda dari password yang memang harus selalu ngikutin RESTU).
+// - peran (db/031, gantiin is_admin lama - lihat 3-tier peran di src/Auth.php)
+//   CUMA di-set dari role RESTU (Admin->pengelola/User->pengguna) pas akun
+//   PERTAMA KALI dibuat - update berikutnya GAK PERNAH nimpa peran,
+//   biar admin AURA bisa promosikan manual (mis. ke 'admin') tanpa
+//   ke-reset lagi besoknya (beda dari password yang memang harus selalu
+//   ngikutin RESTU).
 // - Akun tanpa nip (mis. "admin.kepegawaian" versi RESTU sendiri, generik
 //   bukan punya pegawai tertentu) DILEWATI - gak ada pegawai riil buat
 //   dicocokkan.
@@ -142,7 +143,7 @@ $rowsAkun = $restu->query("SELECT username, nip, password, role FROM user WHERE 
 $cekAkunAda = $aura->prepare('SELECT id, username, password_hash, nama_tampilan FROM user_login WHERE nip = ?');
 $updateAkun = $aura->prepare('UPDATE user_login SET password_hash = ?, nama_tampilan = ?, updated_at = NOW() WHERE nip = ?');
 $insertAkun = $aura->prepare(
-    'INSERT INTO user_login (username, nip, password_hash, nama_tampilan, is_admin, status_aktif)
+    'INSERT INTO user_login (username, nip, password_hash, nama_tampilan, peran, status_aktif)
      VALUES (?, ?, ?, ?, ?, 1)'
 );
 // nama_tampilan diambil dari pegawai.nama_lengkap (AURA sendiri, yang barusan
@@ -182,11 +183,16 @@ foreach ($rowsAkun as $r) {
                 $akunDiupdate++;
             }
         } else {
-            $isAdmin = ($r['role'] === 'Admin') ? 1 : 0;
+            // peran cuma di-set pas akun PERTAMA KALI dibuat (Admin->pengelola,
+            // User->pengguna) - update di atas GAK PERNAH nyentuh peran, biar
+            // admin AURA bisa promosikan manual (mis. ke 'admin') tanpa
+            // ke-reset lagi besok (sama filosofi kayak password vs peran
+            // sebelumnya, lihat catatan kepala file).
+            $peran = ($r['role'] === 'Admin') ? 'pengelola' : 'pengguna';
             if ($dryRun) {
                 echo "  [akun baru] {$r['nip']} {$r['username']}\n";
             } else {
-                $insertAkun->execute(array($r['username'], $r['nip'], $r['password'], $namaTampilan, $isAdmin));
+                $insertAkun->execute(array($r['username'], $r['nip'], $r['password'], $namaTampilan, $peran));
             }
             $akunDibuat++;
         }

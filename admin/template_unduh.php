@@ -6,7 +6,7 @@ use Aurat\Auth;
 use Aurat\Surat\TemplateSuratRepository;
 use Aurat\Surat\TemplateUpload;
 
-Auth::requireLogin();
+Auth::requirePengelolaAtauAdmin();
 
 $templateSuratId = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 $template = $templateSuratId > 0 ? TemplateSuratRepository::muatById($templateSuratId) : null;

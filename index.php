@@ -16,6 +16,13 @@ $breadcrumb   = 'Dasbor';
 $subJudul     = 'Isi data pada formulir, lalu unduh dokumennya langsung sebagai berkas Word (.docx) siap cetak. Tidak ada berkas yang tersimpan di server.';
 
 $semuaJenisSurat = JenisSuratRepository::semua(true);
+if (!Auth::isPengelolaAtauAdmin()) {
+    // peran 'pengguna' - dasbor cuma nampilin jenis surat yg boleh diakses
+    // (lihat Auth::bolehAksesJenisSurat), bukan seluruh daftar.
+    $semuaJenisSurat = array_values(array_filter($semuaJenisSurat, function ($js) {
+        return Auth::bolehAksesJenisSurat($js['kode']);
+    }));
+}
 
 $jumlahPegawai = (int) Database::pdo()->query('SELECT COUNT(*) FROM pegawai WHERE status_aktif = 1')->fetchColumn();
 
@@ -48,6 +55,7 @@ require __DIR__ . '/views/layout_atas.php';
   <?php endforeach; ?>
 </div>
 
+<?php if (Auth::isPengelolaAtauAdmin()): ?>
 <div style="margin-top:40px;">
   <h2 style="font-size:0.98rem; margin-bottom:14px;">Data pendukung</h2>
   <div class="card-grid" style="grid-template-columns:repeat(auto-fill,minmax(200px,240px));">
@@ -59,4 +67,5 @@ require __DIR__ . '/views/layout_atas.php';
     </a>
   </div>
 </div>
+<?php endif; ?>
 <?php require __DIR__ . '/views/layout_bawah.php'; ?>

@@ -43,7 +43,7 @@ class Auth
         $_SESSION['user_id']        = (int) $user['id'];
         $_SESSION['nama_tampilan']  = $user['nama_tampilan'];
         $_SESSION['username']       = $user['username'];
-        $_SESSION['is_admin']       = (int) $user['is_admin'];
+        $_SESSION['peran']          = $user['peran'];
 
         return array('success' => true, 'message' => '');
     }
@@ -86,9 +86,37 @@ class Auth
         }
     }
 
+    // 3 peran (diminta user 2026-09-05, gantiin is_admin biner lama):
+    // 'pengguna' (default - CUMA boleh akses Izin Keluar Kantor, whitelist
+    // di-hardcode di bawah krn cuma 1 pengecualian, bukan data-driven -
+    // YAGNI), 'pengelola' (akses semua fungsi KECUALI Kelola Pengguna &
+    // Pengaturan Aplikasi), 'admin' (akses penuh).
+    const PERAN_PENGGUNA  = 'pengguna';
+    const PERAN_PENGELOLA = 'pengelola';
+    const PERAN_ADMIN     = 'admin';
+
+    // jenis_surat.kode yang boleh diakses peran 'pengguna'.
+    private static $whitelistPengguna = array('izin_keluar_kantor');
+
+    public static function peran()
+    {
+        return self::check() && isset($_SESSION['peran']) ? $_SESSION['peran'] : null;
+    }
+
     public static function isAdmin()
     {
-        return self::check() && !empty($_SESSION['is_admin']);
+        return self::peran() === self::PERAN_ADMIN;
+    }
+
+    public static function isPengelolaAtauAdmin()
+    {
+        return in_array(self::peran(), array(self::PERAN_PENGELOLA, self::PERAN_ADMIN), true);
+    }
+
+    /** Boleh generate jenis_surat berkode $kode ini? (admin/pengelola: semua; pengguna: whitelist saja) */
+    public static function bolehAksesJenisSurat($kode)
+    {
+        return self::isPengelolaAtauAdmin() || in_array($kode, self::$whitelistPengguna, true);
     }
 
     public static function requireAdmin()
@@ -97,6 +125,15 @@ class Auth
         if (!self::isAdmin()) {
             http_response_code(403);
             die('Akses ditolak — halaman ini khusus administrator.');
+        }
+    }
+
+    public static function requirePengelolaAtauAdmin()
+    {
+        self::requireLogin();
+        if (!self::isPengelolaAtauAdmin()) {
+            http_response_code(403);
+            die('Akses ditolak — halaman ini khusus pengelola/administrator.');
         }
     }
 

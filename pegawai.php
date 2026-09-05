@@ -6,7 +6,7 @@ use Aurat\Auth;
 use Aurat\Csrf;
 use Aurat\Database;
 
-Auth::requireLogin();
+Auth::requirePengelolaAtauAdmin();
 
 $pdo = Database::pdo();
 $pesan = '';

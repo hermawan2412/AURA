@@ -12,7 +12,7 @@ use Aurat\Database;
 use Aurat\Surat\JenisSuratRepository;
 use Aurat\Surat\SuratDiterbitkanRepository;
 
-Auth::requireLogin();
+Auth::requirePengelolaAtauAdmin();
 
 $pesan = '';
 $pesanTipe = 'info';

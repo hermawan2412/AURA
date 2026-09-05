@@ -9,7 +9,7 @@ use Aurat\Surat\JenisSuratRepository;
 use Aurat\Surat\BlokTabelRepository;
 use Aurat\Surat\NilaiResolver;
 
-Auth::requireLogin();
+Auth::requirePengelolaAtauAdmin();
 
 $jenisSuratId = isset($_GET['jenis_surat_id']) ? (int) $_GET['jenis_surat_id'] : (isset($_POST['jenis_surat_id']) ? (int) $_POST['jenis_surat_id'] : 0);
 $jenisSurat = $jenisSuratId > 0 ? JenisSuratRepository::muatById($jenisSuratId) : null;
