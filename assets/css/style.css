@@ -2,7 +2,14 @@
   --paper:#F7F5F0; --surface:#FFFFFF; --surface-2:#F1EDE3; --ink:#20262C; --ink-dim:#727C74;
   --primary:#1E3E5C; --primary-soft:#E6EDF3; --primary-ink:#F7F5F0;
   --accent:#B8452F; --accent-soft:#F7E3DA; --accent-ink:#FBF3EC;
-  --primary-rgb:30,62,92; --accent-rgb:184,69,47; --aurora-plum-rgb:154,95,176; --aurora-teal-rgb:62,158,140;
+  /* Warna glow "aurora" (.has-glow, lihat blok di bawah) - -rgb ini CUMA
+     dipakai buat itu, gak dipakai komponen lain (--accent/--primary hex di
+     atas yg dipakai tombol/branding tetap gak disentuh). Mode terang: 4
+     nuansa emas senada logo AURA (dipetik dari assets/img/logo-mark.png),
+     diminta user eksplisit lebih terlihat drpd rainbow ungu/teal lama yg
+     kelihatan cuma kayak bayangan di atas --paper terang. Mode gelap tetap
+     ungu/teal (gak diminta ganti). */
+  --primary-rgb:214,178,90; --accent-rgb:191,149,63; --aurora-plum-rgb:168,124,42; --aurora-teal-rgb:226,198,132;
   --border:#E7E1D3; --border-strong:#D6CEBB;
   --shadow-sm: 0 1px 2px rgba(32,38,44,0.05);
   --shadow-md: 0 10px 28px rgba(32,38,44,0.10), 0 2px 6px rgba(32,38,44,0.05);
@@ -11,8 +18,13 @@
   --display: "Avenir Next","Century Gothic",-apple-system,"Segoe UI",sans-serif;
   --mono: "SF Mono","Cascadia Code",Consolas,"Liberation Mono",monospace;
 }
+/* Toggle manual (.theme-toggle, lihat assets/js/theme-toggle.js) nyetel
+   data-theme di <html> - "terang" dipaksa lewat :not([data-theme="light"])
+   di bawah biar gak ketiban @media sistem kalau OS-nya gelap. "gelap"
+   dipaksa lewat blok [data-theme="dark"] terpisah (sama isinya persis
+   dgn @media, cuma beda selector) krn @media gak bisa dipicu manual. */
 @media (prefers-color-scheme: dark){
-  :root{
+  :root:not([data-theme="light"]){
     --paper:#15181B; --surface:#1C2024; --surface-2:#22262B; --ink:#E9E5DA; --ink-dim:#96A099;
     --primary:#7FA8CE; --primary-soft:#233240; --primary-ink:#0E1215;
     --accent:#E08267; --accent-soft:#3A2620; --accent-ink:#1A0F0C;
@@ -20,6 +32,14 @@
     --border:#2A2F34; --border-strong:#3A4046;
     --shadow-sm: 0 1px 2px rgba(0,0,0,0.3); --shadow-md: 0 12px 30px rgba(0,0,0,0.38), 0 2px 8px rgba(0,0,0,0.3);
   }
+}
+:root[data-theme="dark"]{
+  --paper:#15181B; --surface:#1C2024; --surface-2:#22262B; --ink:#E9E5DA; --ink-dim:#96A099;
+  --primary:#7FA8CE; --primary-soft:#233240; --primary-ink:#0E1215;
+  --accent:#E08267; --accent-soft:#3A2620; --accent-ink:#1A0F0C;
+  --primary-rgb:127,168,206; --accent-rgb:224,130,103; --aurora-plum-rgb:201,144,222; --aurora-teal-rgb:99,199,178;
+  --border:#2A2F34; --border-strong:#3A4046;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.3); --shadow-md: 0 12px 30px rgba(0,0,0,0.38), 0 2px 8px rgba(0,0,0,0.3);
 }
 *{box-sizing:border-box;}
 body{margin:0; font-family:var(--sans); background:var(--paper); color:var(--ink);}
@@ -63,9 +83,21 @@ a{color:inherit;}
 .nav-item:hover{background:var(--surface-2); color:var(--ink);}
 .nav-item.active{background:var(--primary-soft); color:var(--primary); font-weight:700;}
 .sidebar-footer{margin-top:auto; border-top:1px solid var(--border); padding-top:14px; font-size:0.82rem;}
+.sidebar-footer-row{display:flex; align-items:center; justify-content:space-between; gap:10px;}
 .sidebar-user b{display:block; font-size:0.86rem;}
 .sidebar-user span{font-size:0.72rem; color:var(--ink-dim);}
 .logout-link{background:none; border:none; color:var(--ink-dim); font-size:0.78rem; cursor:pointer; padding:0; text-decoration:underline;}
+
+/* Toggle tema: 1 tombol, klik gonta-ganti Auto -> Terang -> Gelap -> Auto
+   (lihat assets/js/theme-toggle.js). Ikon beda per state, dikontrol lewat
+   atribut data-mode di tombol ini sendiri (bukan 3 tombol terpisah). */
+.theme-toggle{display:flex; align-items:center; justify-content:center; width:34px; height:34px; flex:0 0 auto; border-radius:50%; background:var(--surface-2); color:var(--ink-dim); border:none; cursor:pointer; transition:background .15s ease, color .15s ease;}
+.theme-toggle:hover{background:var(--accent-soft); color:var(--accent);}
+.theme-toggle svg{display:block;}
+.theme-toggle .icon-auto, .theme-toggle .icon-light, .theme-toggle .icon-dark{display:none;}
+.theme-toggle[data-mode="auto"] .icon-auto,
+.theme-toggle[data-mode="light"] .icon-light,
+.theme-toggle[data-mode="dark"] .icon-dark{display:block;}
 
 .main{flex:1; min-width:0; padding:36px 42px 60px;}
 .crumb{font-size:0.76rem; color:var(--ink-dim); text-transform:uppercase; letter-spacing:.06em; margin-bottom:8px; font-weight:600;}
