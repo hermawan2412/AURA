@@ -26,6 +26,23 @@
 // NIP baru di RESTU yang belum ada di AURA -> auto-insert (dikonfirmasi
 // user), status_aktif=1, unit_kerja default "Pengadilan Agama Rantau"
 // (satu-satunya nilai yang ada di RESTU juga).
+//
+// TAHAP 2 (ditambah 2026-09-05): sync AKUN LOGIN dari RESTU juga (user_login
+// + kolom nip baru, db/030) - AURA sebelumnya cuma 1 akun generik
+// (admin.kepegawaian), semua jenis surat sebenarnya udah kebuka buat siapa
+// aja yang login, jadi yang kurang cuma AKUN per-pegawai, bukan sistem izin
+// baru (dikonfirmasi user - akses tetap penuh spt sekarang).
+// - Password DISINKRON (dikonfirmasi user: 1 kredensial buat 2 app) - dicek
+//   dulu hash RESTU beneran bcrypt ($2y$...), password_verify() PHP
+//   universal terhadap format itu terlepas app mana yang bikin hash-nya,
+//   jadi aman disalin mentah, BUKAN re-hash/re-encode apa pun.
+// - is_admin CUMA di-set dari role RESTU (Admin->1/User->0) pas akun
+//   PERTAMA KALI dibuat - update berikutnya GAK PERNAH nimpa is_admin,
+//   biar admin AURA bisa promosikan manual tanpa ke-demote lagi besoknya
+//   (beda dari password yang memang harus selalu ngikutin RESTU).
+// - Akun tanpa nip (mis. "admin.kepegawaian" versi RESTU sendiri, generik
+//   bukan punya pegawai tertentu) DILEWATI - gak ada pegawai riil buat
+//   dicocokkan.
 
 declare(strict_types=1);
 chdir(__DIR__);
@@ -116,3 +133,69 @@ foreach ($rows as $r) {
 echo '[' . date('c') . '] ' . ($dryRun ? 'DRY-RUN (gak ada yg beneran ditulis): ' : 'Sync selesai: ')
     . count($rows) . " baris RESTU diproses, "
     . "$diupdate ke-update, $dibuat baru dibuat, $gagal gagal.\n";
+
+// ============================================================
+// TAHAP 2: sync akun login (user_login) - lihat catatan di kepala file.
+// ============================================================
+$rowsAkun = $restu->query("SELECT username, nip, password, role FROM user WHERE nip != ''")->fetchAll();
+
+$cekAkunAda = $aura->prepare('SELECT id, username, password_hash, nama_tampilan FROM user_login WHERE nip = ?');
+$updateAkun = $aura->prepare('UPDATE user_login SET password_hash = ?, nama_tampilan = ?, updated_at = NOW() WHERE nip = ?');
+$insertAkun = $aura->prepare(
+    'INSERT INTO user_login (username, nip, password_hash, nama_tampilan, is_admin, status_aktif)
+     VALUES (?, ?, ?, ?, ?, 1)'
+);
+// nama_tampilan diambil dari pegawai.nama_lengkap (AURA sendiri, yang barusan
+// ikut disinkron di Tahap 1 di atas - bukan JOIN ke RESTU lagi).
+$cariNama = $aura->prepare('SELECT nama_lengkap FROM pegawai WHERE nip = ?');
+
+$akunDiupdate = 0;
+$akunDibuat = 0;
+$akunGagal = 0;
+$akunDilewati = 0;
+
+foreach ($rowsAkun as $r) {
+    try {
+        $cariNama->execute(array($r['nip']));
+        $pegawai = $cariNama->fetch();
+        if (!$pegawai) {
+            // NIP di RESTU tapi belum kesinkron ke pegawai AURA (jarang -
+            // cuma kalau Tahap 1 di atas gagal utk NIP ini) - lewati dulu,
+            // coba lagi run besok setelah Tahap 1 kejar.
+            $akunDilewati++;
+            continue;
+        }
+        $namaTampilan = $pegawai['nama_lengkap'];
+
+        $cekAkunAda->execute(array($r['nip']));
+        $existing = $cekAkunAda->fetch();
+        if ($existing) {
+            $akunBerubah = $existing['password_hash'] !== $r['password'] || $existing['nama_tampilan'] !== $namaTampilan;
+            if ($dryRun) {
+                if ($akunBerubah) {
+                    echo "  [akun update] {$r['nip']} {$existing['username']}\n";
+                }
+            } else {
+                $updateAkun->execute(array($r['password'], $namaTampilan, $r['nip']));
+            }
+            if ($akunBerubah) {
+                $akunDiupdate++;
+            }
+        } else {
+            $isAdmin = ($r['role'] === 'Admin') ? 1 : 0;
+            if ($dryRun) {
+                echo "  [akun baru] {$r['nip']} {$r['username']}\n";
+            } else {
+                $insertAkun->execute(array($r['username'], $r['nip'], $r['password'], $namaTampilan, $isAdmin));
+            }
+            $akunDibuat++;
+        }
+    } catch (PDOException $e) {
+        $akunGagal++;
+        error_log('[AURA sync-restu] gagal proses akun NIP ' . $r['nip'] . ': ' . $e->getMessage());
+    }
+}
+
+echo '[' . date('c') . '] ' . ($dryRun ? 'DRY-RUN akun: ' : 'Sync akun selesai: ')
+    . count($rowsAkun) . " baris RESTU diproses, "
+    . "$akunDiupdate ke-update, $akunDibuat baru dibuat, $akunDilewati dilewati (pegawai blm sinkron), $akunGagal gagal.\n";

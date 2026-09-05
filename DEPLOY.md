@@ -92,12 +92,15 @@ Pastikan user yang menjalankan Apache/PHP-FPM bisa membaca semua file (biasanya 
 
 Kalau server ini juga menjalankan app RESTU (cuti) di MySQL instance yang sama, `cron/sync_pegawai_dari_restu.php` bisa nyinkron `nama_lengkap`/`jabatan`/`golongan_ruang`/`tmt` pegawai dari RESTU ke AURA tiap hari, satu arah (RESTU -> AURA), read-only terhadap RESTU. Field lain (pangkat, gelar, unit_kerja, status_aktif) sengaja tidak disentuh — lihat komentar di kepala file skrip untuk alasannya.
 
-1. Buat user MySQL read-only, cuma ke 3 tabel yang dibutuhkan:
+Skrip yang sama (Tahap 2, ditambah 2026-09-05) SEKALIAN nyinkron **akun login** dari `restu.user` — akun per-pegawai (username + password bcrypt + is_admin dari role) otomatis dibuat/di-update di AURA, password DISINKRON (1 kredensial buat 2 app, dikonfirmasi user). Butuh `db/030_sync_akun_dari_restu.sql` sudah jalan (kolom `user_login.nip`).
+
+1. Buat user MySQL read-only, cuma ke 4 tabel yang dibutuhkan (nambah `user` dari sebelumnya):
    ```sql
    CREATE USER 'aura_restu_reader'@'localhost' IDENTIFIED BY 'PASSWORD_BARU_DI_SINI';
    GRANT SELECT ON restu.pegawai TO 'aura_restu_reader'@'localhost';
    GRANT SELECT ON restu.jabatan TO 'aura_restu_reader'@'localhost';
    GRANT SELECT ON restu.golongan TO 'aura_restu_reader'@'localhost';
+   GRANT SELECT ON restu.user TO 'aura_restu_reader'@'localhost';
    FLUSH PRIVILEGES;
    ```
 2. Isi blok `db_restu_readonly` di `config/config.php` dengan kredensial di atas (lihat `config.example.php`).
