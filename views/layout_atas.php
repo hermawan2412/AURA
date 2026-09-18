@@ -8,6 +8,7 @@
  */
 use Aurat\Auth;
 use Aurat\Csrf;
+use Aurat\Pengaturan;
 use Aurat\Surat\IconLibrary;
 use Aurat\Surat\JenisSuratRepository;
 
@@ -29,7 +30,7 @@ foreach (JenisSuratRepository::semua(true) as $js) {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title><?php echo htmlspecialchars((string) $judulHalaman); ?> — AURA</title>
+<title><?php echo htmlspecialchars((string) $judulHalaman); ?> — <?php echo htmlspecialchars(Pengaturan::namaAplikasi()); ?></title>
 <link rel="icon" type="image/png" href="<?php echo isset($rootAsset) ? $rootAsset : ''; ?>assets/img/favicon.png">
 <link rel="stylesheet" href="<?php echo isset($rootAsset) ? $rootAsset : ''; ?>assets/css/style.css">
 <script>(function(){try{var m=localStorage.getItem('aura-theme');if(m==='light'||m==='dark')document.documentElement.setAttribute('data-theme',m);}catch(e){}})();</script>
@@ -38,8 +39,8 @@ foreach (JenisSuratRepository::semua(true) as $js) {
 <div class="shell">
   <aside class="sidebar">
     <div class="brand">
-      <img class="brand-mark" src="<?php echo isset($rootAsset) ? $rootAsset : ''; ?>assets/img/logo-mark.png" alt="AURA">
-      <div class="brand-text">AURA<small>Bagian Kepegawaian</small></div>
+      <img class="brand-mark" src="<?php echo isset($rootAsset) ? $rootAsset : ''; ?>assets/img/logo-mark.png" alt="<?php echo htmlspecialchars(Pengaturan::namaAplikasi()); ?>">
+      <div class="brand-text"><?php echo htmlspecialchars(Pengaturan::namaAplikasi()); ?><small><?php echo htmlspecialchars(Pengaturan::namaInstansi()); ?></small></div>
     </div>
 
     <nav>

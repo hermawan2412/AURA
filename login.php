@@ -4,6 +4,7 @@ require __DIR__ . '/src/bootstrap.php';
 
 use Aurat\Auth;
 use Aurat\Csrf;
+use Aurat\Pengaturan;
 
 if (Auth::check()) {
     header('Location: index.php');
@@ -35,7 +36,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Masuk — AURA</title>
+<title>Masuk — <?php echo htmlspecialchars(Pengaturan::namaAplikasi()); ?></title>
 <link rel="icon" type="image/png" href="assets/img/favicon.png">
 <link rel="stylesheet" href="assets/css/style.css">
 <script>(function(){try{var m=localStorage.getItem('aura-theme');if(m==='light'||m==='dark')document.documentElement.setAttribute('data-theme',m);}catch(e){}})();</script>
@@ -43,8 +44,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
 <div class="login-screen">
   <form class="login-card" method="post" action="login.php">
-    <img class="logo-img" src="assets/img/logo.png" alt="AURA">
-    <p class="login-sub">Aplikasi Untuk suRAt<br>Sekretariat &middot; Bagian Kepegawaian</p>
+    <img class="logo-img" src="assets/img/logo.png" alt="<?php echo htmlspecialchars(Pengaturan::namaAplikasi()); ?>">
+    <p class="login-sub"><?php echo htmlspecialchars(Pengaturan::subjudulLogin()); ?><br><?php echo htmlspecialchars(Pengaturan::namaInstansi()); ?></p>
 
     <?php if ($pesanError !== ''): ?>
       <div class="alert alert-error"><?php echo htmlspecialchars((string) $pesanError); ?></div>
