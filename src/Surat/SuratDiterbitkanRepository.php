@@ -17,7 +17,7 @@ class SuratDiterbitkanRepository
      * Dipanggil sesudah $resolver->resolveSemua() sukses, sebelum dokumen
      * di-stream - $nilai adalah array kode_variabel => nilai_string.
      */
-    public static function catat(array $jenisSurat, $subJenisSuratId, $templateSuratId, array $nilai, $dibuatOleh)
+    public static function catat(array $jenisSurat, $subJenisSuratId, $templateSuratId, array $nilai, $dibuatOleh, $indukId = null)
     {
         $ambil = function ($kode) use ($nilai) {
             return ($kode !== null && $kode !== '' && isset($nilai[$kode])) ? $nilai[$kode] : null;
@@ -43,11 +43,11 @@ class SuratDiterbitkanRepository
 
         $stmt = Database::pdo()->prepare(
             'INSERT INTO surat_diterbitkan
-                (jenis_surat_id, sub_jenis_surat_id, template_surat_id, nomor, tanggal_dokumen, ringkasan, nilai_lengkap, dibuat_oleh)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+                (jenis_surat_id, sub_jenis_surat_id, template_surat_id, induk_id, nomor, tanggal_dokumen, ringkasan, nilai_lengkap, dibuat_oleh)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
         $stmt->execute(array(
-            $jenisSurat['id'], $subJenisSuratId, $templateSuratId,
+            $jenisSurat['id'], $subJenisSuratId, $templateSuratId, $indukId,
             $nomor, $tanggalDokumen, $ringkasan !== null ? mb_substr((string) $ringkasan, 0, 255) : null,
             json_encode($nilai, JSON_UNESCAPED_UNICODE),
             $dibuatOleh,

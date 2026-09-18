@@ -19,8 +19,14 @@ use Aurat\Surat\SuratDiterbitkanRepository;
 
 Auth::requireLogin();
 
-/** Substitusi {kode_variabel} dari jenis_surat.pola_nama_unduhan; fallback kode+tanggal, lalu disanitasi jadi nama file aman. */
-function auratNamaUnduhan(array $jenisSurat, $subJenisKode, array $nilai)
+/**
+ * Substitusi {kode_variabel} dari jenis_surat.pola_nama_unduhan; fallback kode+tanggal,
+ * lalu disanitasi jadi nama file aman. Dokumen lampiran (tipe_dokumen != 'utama') dapat
+ * suffix dari nama asli berkas template-nya, biar tiap dokumen dalam 1 paket .zip beda
+ * nama - generik, gak hardcode "daftar hadir" di sini (jenis lampiran apa pun otomatis
+ * kebedain lewat nama_asli yang admin kasih pas upload).
+ */
+function auratNamaUnduhan(array $jenisSurat, $subJenisKode, array $nilai, ?array $template = null)
 {
     $pola = isset($jenisSurat['pola_nama_unduhan']) ? $jenisSurat['pola_nama_unduhan'] : '';
 
@@ -37,6 +43,11 @@ function auratNamaUnduhan(array $jenisSurat, $subJenisKode, array $nilai)
         $basis = $jenisSurat['kode'] . '_' . date('Y-m-d');
     }
 
+    if ($template !== null && $template['tipe_dokumen'] !== 'utama') {
+        $suffix = preg_replace('/[^A-Za-z0-9_-]/', '_', pathinfo((string) $template['nama_asli'], PATHINFO_FILENAME));
+        $basis .= '_' . $suffix;
+    }
+
     return $basis . '.docx';
 }
 
@@ -44,7 +55,7 @@ function auratNamaUnduhan(array $jenisSurat, $subJenisKode, array $nilai)
  * Validasi + resolusi nilai + generate dokumen dari data POST. Return string pesan
  * error kalau gagal; kalau berhasil, stream dokumen langsung lalu exit (tidak return).
  */
-function auratProsesGenerate(array $jenisSurat, $subJenisSuratId, $subJenisKode, array $template, array $variabelList, array $variabelManual, array $blokList, array $peranDipakai)
+function auratProsesGenerate(array $jenisSurat, $subJenisSuratId, $subJenisKode, array $templateSemua, array $variabelList, array $variabelManual, array $blokList, array $peranDipakai)
 {
     $pdo = Database::pdo();
 
@@ -196,24 +207,49 @@ function auratProsesGenerate(array $jenisSurat, $subJenisSuratId, $subJenisKode,
         return $e->getMessage();
     }
 
-    $namaUnduhan = auratNamaUnduhan($jenisSurat, $subJenisKode, $nilai);
-
-    // Rekam ke ledger (surat_diterbitkan) - dibungkus try/catch sendiri,
-    // gagal nyimpen histori TIDAK BOLEH menghalangi dokumen tetap terbit
-    // (sama prinsip kayak notifikasi WA di RESTU: fitur sekunder gak pernah
-    // memblokir alur utama).
-    try {
-        SuratDiterbitkanRepository::catat(
-            $jenisSurat, $subJenisSuratId, (int) $template['id'], $nilai,
-            isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null
-        );
-    } catch (\Throwable $e) {
-        error_log('[AURA] Gagal mencatat surat_diterbitkan: ' . $e->getMessage());
+    // --- 7. Rekam ke ledger (surat_diterbitkan), 1 baris per template aktif ---
+    // dibungkus try/catch sendiri, gagal nyimpen histori TIDAK BOLEH menghalangi
+    // dokumen tetap terbit (sama prinsip kayak notifikasi WA di RESTU: fitur
+    // sekunder gak pernah memblokir alur utama). Lampiran (Daftar Hadir dkk)
+    // di-induk_id-kan ke baris utama biar keliatan sebagai 1 paket di histori.
+    $indukId = null;
+    foreach ($templateSemua as $t) {
+        try {
+            $id = SuratDiterbitkanRepository::catat(
+                $jenisSurat, $subJenisSuratId, (int) $t['id'], $nilai,
+                isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null,
+                $t['tipe_dokumen'] === 'utama' ? null : $indukId
+            );
+            if ($t['tipe_dokumen'] === 'utama') {
+                $indukId = $id;
+            }
+        } catch (\Throwable $e) {
+            error_log('[AURA] Gagal mencatat surat_diterbitkan: ' . $e->getMessage());
+        }
     }
 
+    // --- 8. Generate dokumen. 1 template aktif = unduhan .docx langsung
+    // (perilaku lama, gak berubah). >1 template aktif (ada lampiran) = semua
+    // digenerate lalu dibungkus 1 berkas .zip, biar user gak diminta unduh
+    // berkali-kali.
     try {
-        DocxGenerator::generateDanUnduh(TemplateSuratRepository::path($template), $nilai, $tabel, $namaUnduhan);
-        exit; // generateDanUnduh sudah exit setelah stream; baris ini jaga-jaga.
+        if (count($templateSemua) === 1) {
+            $namaUnduhan = auratNamaUnduhan($jenisSurat, $subJenisKode, $nilai);
+            DocxGenerator::generateDanUnduh(TemplateSuratRepository::path($templateSemua[0]), $nilai, $tabel, $namaUnduhan);
+        } else {
+            $dokumen = array();
+            foreach ($templateSemua as $t) {
+                $dokumen[] = array(
+                    'templateRelPath' => TemplateSuratRepository::path($t),
+                    'nilai' => $nilai,
+                    'tabel' => $tabel,
+                    'namaUnduhan' => auratNamaUnduhan($jenisSurat, $subJenisKode, $nilai, $t),
+                );
+            }
+            $namaZip = preg_replace('/\.docx$/', '.zip', auratNamaUnduhan($jenisSurat, $subJenisKode, $nilai));
+            DocxGenerator::generateZipDanUnduh($dokumen, $namaZip);
+        }
+        exit; // generateDanUnduh/generateZipDanUnduh sudah exit setelah stream; baris ini jaga-jaga.
     } catch (RuntimeException $e) {
         return $e->getMessage();
     }
@@ -285,13 +321,26 @@ if ($tampilkanPemilihSubJenis) {
 
 $subJenisSuratId = $subJenis ? (int) $subJenis['id'] : null;
 
-$template = TemplateSuratRepository::templateUntuk($jenisSurat['id'], $subJenisSuratId);
-if (!$template) {
+$templateSemua = TemplateSuratRepository::templateAktifSemua($jenisSurat['id'], $subJenisSuratId);
+if (empty($templateSemua)) {
     http_response_code(500);
     exit('Template belum tersedia untuk jenis surat ini. Hubungi administrator untuk mengunggah template.');
 }
 
-$variabelList = VariabelRepository::variabelUntukTemplate($template['id']);
+// Form + variabel yang ditampilkan/divalidasi = GABUNGAN semua template aktif
+// (utama + lampiran-lampirannya, mis. Undangan + Daftar Hadir) - 1 submit form
+// mengisi kebutuhan semua dokumen sekaligus. Digabung by-kode (variabel_surat.kode
+// unik, dipakai ulang lintas template lewat template_surat_variabel).
+$variabelList = array();
+$kodeTerpakai = array();
+foreach ($templateSemua as $t) {
+    foreach (VariabelRepository::variabelUntukTemplate($t['id']) as $v) {
+        if (!isset($kodeTerpakai[$v['kode']])) {
+            $variabelList[] = $v;
+            $kodeTerpakai[$v['kode']] = true;
+        }
+    }
+}
 $variabelManual = array();
 foreach ($variabelList as $v) {
     if ($v['sumber'] === 'manual') {
@@ -315,7 +364,7 @@ $peranDipakai = array_values(array_filter($jenisSurat['peran_pegawai'], function
 $pesanError = '';
 
 if ($metode === 'POST') {
-    $pesanError = auratProsesGenerate($jenisSurat, $subJenisSuratId, $subJenisKode, $template, $variabelList, $variabelManual, $blokList, $peranDipakai);
+    $pesanError = auratProsesGenerate($jenisSurat, $subJenisSuratId, $subJenisKode, $templateSemua, $variabelList, $variabelManual, $blokList, $peranDipakai);
     // Kalau sukses, auratProsesGenerate() sudah exit() setelah stream dokumen — baris di bawah ini hanya jalan kalau gagal.
 }
 

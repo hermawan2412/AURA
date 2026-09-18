@@ -34,6 +34,14 @@ if ($jenisSurat['kategori'] === 'dua_dokumen') {
 }
 $subJenisSuratIdParam = $subJenis ? (int) $subJenis['id'] : null;
 
+// Dokumen "lampiran" (mis. Daftar Hadir buat Undangan) di-generate bareng
+// dokumen utama dari 1 submit form (lihat surat/index.php) - dikelola di
+// halaman yang sama, cuma discope terpisah lewat query string ?tipe_dokumen=.
+$tipeDokumen = (isset($_GET['tipe_dokumen']) ? $_GET['tipe_dokumen'] : (isset($_POST['tipe_dokumen']) ? $_POST['tipe_dokumen'] : 'utama'));
+if (!in_array($tipeDokumen, array('utama', 'lampiran'), true)) {
+    $tipeDokumen = 'utama';
+}
+
 $pesan = '';
 $pesanTipe = 'info';
 
@@ -50,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $disimpan = TemplateUpload::simpan($_FILES['template']);
             $templateSuratId = TemplateSuratRepository::simpanVersiBaru(
                 $jenisSuratId, $subJenisSuratIdParam, $disimpan['nama_berkas'], $disimpan['nama_asli'],
-                isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null
+                isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null, $tipeDokumen
             );
             header('Location: template_variabel.php?template_surat_id=' . $templateSuratId);
             exit;
@@ -65,7 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pesan = 'Gagal mengaktifkan versi: ' . $e->getMessage();
             $pesanTipe = 'error';
         }
-        $lokasi = 'template_surat.php?jenis_surat_id=' . $jenisSuratId . ($subJenisSuratIdParam ? '&sub_jenis_surat_id=' . $subJenisSuratIdParam : '');
+        $lokasi = 'template_surat.php?jenis_surat_id=' . $jenisSuratId . ($subJenisSuratIdParam ? '&sub_jenis_surat_id=' . $subJenisSuratIdParam : '') . '&tipe_dokumen=' . $tipeDokumen;
         header('Location: ' . $lokasi);
         exit;
     } elseif ($aksi === 'hapus_versi' && isset($_POST['template_surat_id'])) {
@@ -75,20 +83,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $pesan = $e->getMessage();
             $pesanTipe = 'error';
         }
-        $lokasi = 'template_surat.php?jenis_surat_id=' . $jenisSuratId . ($subJenisSuratIdParam ? '&sub_jenis_surat_id=' . $subJenisSuratIdParam : '');
+        $lokasi = 'template_surat.php?jenis_surat_id=' . $jenisSuratId . ($subJenisSuratIdParam ? '&sub_jenis_surat_id=' . $subJenisSuratIdParam : '') . '&tipe_dokumen=' . $tipeDokumen;
         header('Location: ' . $lokasi);
         exit;
     }
 }
 
-$templateAktif = TemplateSuratRepository::templateUntuk($jenisSuratId, $subJenisSuratIdParam);
-$riwayat = TemplateSuratRepository::riwayat($jenisSuratId, $subJenisSuratIdParam);
+$templateAktif = TemplateSuratRepository::templateUntuk($jenisSuratId, $subJenisSuratIdParam, $tipeDokumen);
+$riwayat = TemplateSuratRepository::riwayat($jenisSuratId, $subJenisSuratIdParam, $tipeDokumen);
+$adaLampiran = !empty(array_filter(
+    TemplateSuratRepository::templateAktifSemua($jenisSuratId, $subJenisSuratIdParam),
+    function ($t) { return $t['tipe_dokumen'] === 'lampiran'; }
+));
 
 $halamanAktif = 'admin_jenis_surat';
 $judulHalaman = 'Template — ' . $jenisSurat['nama'] . ($subJenis ? ' (' . $subJenis['label'] . ')' : '');
 $breadcrumb   = 'Kelola Jenis Surat';
 $subJudul     = 'Unggah berkas .docx dengan placeholder ${nama_variabel}. Versi lama tetap tersimpan dan bisa diaktifkan kembali.';
 $rootAsset    = '../';
+
+$urlDasar = 'template_surat.php?jenis_surat_id=' . $jenisSuratId . ($subJenisSuratIdParam ? '&sub_jenis_surat_id=' . $subJenisSuratIdParam : '');
 
 require __DIR__ . '/../views/layout_atas.php';
 ?>
@@ -101,9 +115,20 @@ require __DIR__ . '/../views/layout_atas.php';
   <div class="alert alert-<?php echo htmlspecialchars((string) $pesanTipe); ?>"><?php echo htmlspecialchars((string) $pesan); ?></div>
 <?php endif; ?>
 
+<div class="note" style="margin-bottom:16px;">
+  <a href="<?php echo $urlDasar; ?>&amp;tipe_dokumen=utama" class="btn <?php echo $tipeDokumen === 'utama' ? 'btn-primary' : 'btn-secondary'; ?>" style="margin-right:8px;">Dokumen Utama</a>
+  <a href="<?php echo $urlDasar; ?>&amp;tipe_dokumen=lampiran" class="btn <?php echo $tipeDokumen === 'lampiran' ? 'btn-primary' : 'btn-secondary'; ?>">Dokumen Lampiran<?php echo $adaLampiran ? '' : ' (belum ada)'; ?></a>
+  <p class="form-hint" style="margin-top:8px;">
+    Lampiran digenerate BARENG dokumen utama dari 1 submit form (jadi 1 berkas .zip
+    saat diunduh) - contoh: Daftar Hadir buat Undangan. Jenis surat yang belum butuh
+    lampiran boleh biarkan tab ini kosong.
+  </p>
+</div>
+
 <div class="form-card" style="margin-bottom:20px;">
   <h4 style="font-family:var(--display); font-size:1rem; margin-bottom:16px;">
     <?php echo $templateAktif ? 'Ganti Template (unggah versi baru)' : 'Unggah Template Pertama'; ?>
+    <?php echo $tipeDokumen === 'lampiran' ? ' — Lampiran' : ''; ?>
   </h4>
   <?php if ($templateAktif): ?>
     <p style="font-size:0.85rem; color:var(--ink-dim); margin-bottom:16px;">
@@ -115,6 +140,7 @@ require __DIR__ . '/../views/layout_atas.php';
       <?php echo Csrf::field(); ?>
     <input type="hidden" name="aksi" value="unggah">
     <input type="hidden" name="jenis_surat_id" value="<?php echo $jenisSuratId; ?>">
+    <input type="hidden" name="tipe_dokumen" value="<?php echo htmlspecialchars($tipeDokumen); ?>">
     <?php if ($subJenisSuratIdParam): ?><input type="hidden" name="sub_jenis_surat_id" value="<?php echo $subJenisSuratIdParam; ?>"><?php endif; ?>
     <div class="field">
       <label>Berkas .docx <span class="req">*</span></label>
@@ -146,6 +172,7 @@ require __DIR__ . '/../views/layout_atas.php';
                     <?php echo Csrf::field(); ?>
                   <input type="hidden" name="aksi" value="aktifkan_versi">
                   <input type="hidden" name="jenis_surat_id" value="<?php echo $jenisSuratId; ?>">
+                  <input type="hidden" name="tipe_dokumen" value="<?php echo htmlspecialchars($tipeDokumen); ?>">
                   <?php if ($subJenisSuratIdParam): ?><input type="hidden" name="sub_jenis_surat_id" value="<?php echo $subJenisSuratIdParam; ?>"><?php endif; ?>
                   <input type="hidden" name="template_surat_id" value="<?php echo (int) $t['id']; ?>">
                   <button type="submit" class="btn btn-secondary">Aktifkan</button>
@@ -154,6 +181,7 @@ require __DIR__ . '/../views/layout_atas.php';
                     <?php echo Csrf::field(); ?>
                   <input type="hidden" name="aksi" value="hapus_versi">
                   <input type="hidden" name="jenis_surat_id" value="<?php echo $jenisSuratId; ?>">
+                  <input type="hidden" name="tipe_dokumen" value="<?php echo htmlspecialchars($tipeDokumen); ?>">
                   <?php if ($subJenisSuratIdParam): ?><input type="hidden" name="sub_jenis_surat_id" value="<?php echo $subJenisSuratIdParam; ?>"><?php endif; ?>
                   <input type="hidden" name="template_surat_id" value="<?php echo (int) $t['id']; ?>">
                   <button type="submit" class="btn btn-secondary">Hapus</button>

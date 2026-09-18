@@ -1,8 +1,47 @@
 # Ide: Jenis surat Undangan diperluas (lampiran + arsip NAS + peserta)
 
-Status: **desain disepakati, belum diimplementasi** — dicatat 2026-09-18, hasil sinkron
-visi via chat sebelum eksekusi. Jangan mulai coding dari dokumen ini tanpa konfirmasi
-ulang kalau udah lewat waktu lama (cek chat/memory dulu, desain bisa berubah).
+Status: **item 1+4 (Daftar Hadir + peserta) SELESAI dibangun & diuji lokal, 2026-09-18**
+— belum di-deploy ke VPS. Item 2 (arsip NAS) dan 3 (Notula + role notulis) **belum
+dikerjakan**, nunggu giliran build terpisah. Jangan mulai coding item 2/3 dari dokumen
+ini tanpa konfirmasi ulang kalau udah lewat waktu lama (cek chat/memory dulu).
+
+## Implementasi Daftar Hadir (item 1+4) — selesai
+
+Mekanisme: `template_surat` dapat kolom baru `tipe_dokumen` (`utama`/`lampiran`) -
+1 jenis_surat sekarang bisa punya template UTAMA (surat aslinya) + template
+LAMPIRAN (mis. Daftar Hadir), keduanya di-generate BARENG dari 1 submit form,
+dibungkus jadi 1 `.zip` kalau ada lebih dari 1 template aktif (`db/033_lampiran_
+undangan.sql`, `src/DocxGenerator.php::generateZipDanUnduh()`,
+`surat/index.php`). `surat_diterbitkan` dapat kolom `induk_id` - baris lampiran
+nunjuk baris utama dari submission yang sama, biar keliatan sepaket di histori.
+
+Blok tabel peserta baru: `blok_tabel_surat` kode `peserta` di jenis_surat
+`undangan` (No/Nama/Bagian/Ket - pegawai-picker, generik pakai mekanisme yang
+sama kayak Surat Tugas), terpisah dari field "Kepada Yth." (`tujuan`) yang
+sudah ada duluan.
+
+Template `templates/daftar_hadir_undangan.docx` dibangun dari draft asli user
+(`draft daftar hadir.docx`) lewat macro-injection (skill docx-template-merge),
+BUKAN rebuild - 13 macro: `jenis_kegiatan` (baru), `penandatangan_nip` (baru),
+sisanya reuse by-kode dari variabel Undangan yang sudah ada (`nama_acara`,
+`hari`, `tanggal_acara`, `waktu`, `tempat`, `tanggal_surat`,
+`penandatangan_nama_lengkap`). Admin upload lewat tab baru "Dokumen Lampiran"
+di `admin/template_surat.php` (sama alur admin-UI-upload yang sudah baku di
+proyek ini, bukan file transfer).
+
+Mekanisme `tipe_dokumen` ini GENERIK - bisa dipakai jenis_surat lain yang
+butuh lampiran di masa depan, gak cuma Undangan/Daftar Hadir.
+
+**Belum dilakukan**: deploy ke VPS (`aura.pa-rantau.go.id`) - butuh migrasi
+`033` (inget `sed USE aurat->aura`) + upload `templates/daftar_hadir_
+undangan.docx` lewat admin UI produksi (bukan file transfer, sama kayak semua
+template di proyek ini) + pasang 9 variabel yang di-reuse + set peran
+`penandatangan` (id beda per server, jangan hardcode dari sesi ini).
+
+Draft `draft notula.docx` juga sudah diterima & dianalisis strukturnya
+(1 tabel gabungan: field info + baris "Isi:"/"Foto:" merged full-width +
+TTD ganda Notulis/Pejabat) tapi belum di-macro-inject - nunggu giliran build
+item 3.
 
 ## Latar belakang
 
