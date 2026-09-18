@@ -1,9 +1,53 @@
 # Ide: Jenis surat Undangan diperluas (lampiran + arsip NAS + peserta)
 
-Status: **item 1+4 (Daftar Hadir + peserta) SELESAI dibangun & diuji lokal, 2026-09-18**
-— belum di-deploy ke VPS. Item 2 (arsip NAS) dan 3 (Notula + role notulis) **belum
-dikerjakan**, nunggu giliran build terpisah. Jangan mulai coding item 2/3 dari dokumen
-ini tanpa konfirmasi ulang kalau udah lewat waktu lama (cek chat/memory dulu).
+Status: **item 1+4 (Daftar Hadir + peserta) SELESAI & sudah live di VPS. Item 3 (Notula)
+SELESAI dibangun & diuji lokal, 2026-09-18** — belum di-deploy ke VPS. Item 2 (arsip NAS)
+**belum dikerjakan**, nunggu giliran build terpisah. Jangan mulai coding item 2 dari
+dokumen ini tanpa konfirmasi ulang kalau udah lewat waktu lama (cek chat/memory dulu).
+
+## Implementasi Notula (item 3) — selesai
+
+Notula jadi jenis_surat SENDIRI (kode `notula`), bukan sub-fitur Undangan - pakai
+100% engine generik yang sudah ada (variabel_surat/peran_pegawai_surat/template_surat),
+gak ada tabel baru khusus notula. 2 keputusan yang disepakati sebelum build:
+
+- **Prefill, bukan input manual**: tombol "Buat Notula" di halaman Riwayat Surat
+  Diterbitkan (`admin/surat_diterbitkan.php`, cuma muncul di baris Undangan utama)
+  ke `surat/index.php?kode=notula&dari={surat_diterbitkan.id}` - form Notula otomatis
+  ke-isi hari/tanggal/waktu/tempat/acara (kode variabel SENGAJA sama persis kayak
+  Undangan, jadi cocok langsung tanpa mapping) + peserta rapat (ringkasan teks dari
+  peserta Daftar Hadir sumbernya) + dasar (nomor+tanggal surat undangan sumbernya,
+  kalau ada). **Field tanggal (tipe date) gak ke-prefill** - nilai yang kesimpen di
+  histori sudah lewat format tanggal_indonesia ("25 September 2026"), bukan format
+  YYYY-MM-DD yang dibutuhin `<input type=date>` - keterbatasan yang diketahui, bukan
+  bug, user tinggal pilih ulang tanggalnya (semua field lain tetap ke-prefill).
+  Konsekuensi baru: `surat_diterbitkan` dapat kolom `tabel_lengkap` (JSON, snapshot
+  blok_tabel_surat submission - sebelumnya cuma nilai skalar yang kesimpen).
+- **Upload foto beneran**: variabel_surat dapet `tipe_input='file'` baru (ditangani
+  khusus di `surat/index.php` - render `<input type=file>`, validasi MIME asli lewat
+  `Aurat\Surat\FotoUpload` mirip pola `TemplateUpload`, simpan ke `uploads/notula_foto/`
+  yang di-deny-all lewat .htaccess sama kayak `templates/uploaded/`). `DocxGenerator`
+  dapat param `$gambar` - dipasang lewat `setImageValue()`, bukan `setValue()` biasa;
+  field kosong otomatis ke-blank (bukan nampilin `${foto_notula}` mentah) karena
+  `NilaiResolver` sudah jatuh ke `placeholder_default=''` buat variabel manual yang
+  gak diisi, jadi gak perlu logic blanking terpisah.
+
+Notulis & Pejabat yang Punya Acara: 2 `peran_pegawai_surat` baru (`notulis`,
+`pejabat_acara`) - **TIDAK ada akun/login baru**, cuma dropdown pilih pegawai, sama
+kayak `petugas_cuti`/`diperintah` yang sudah ada di app lain.
+
+Interpretasi 1 hal ambigu di draft: baris "Jalannya Rapat :" di tabel dibiarkan
+KOSONG (bukan diksh macro) - dibaca sebagai judul section buat "Isi:"/"Foto:" di
+bawahnya, bukan field data sendiri (redundan kalau dua-duanya diisi). Kalau ternyata
+salah baca, tinggal edit `templates/notula.docx` (repack ulang lewat skill
+docx-template-merge) - gak perlu ubah skema.
+
+Diuji end-to-end lokal: generate dari Undangan yang sudah ada (prefill jalan,
+termasuk peserta), upload foto JPG beneran (ke-embed sbg PNG di docx, bukan cuma
+placeholder blank), nol macro `${...}` tersisa. **Bug ditemukan & diperbaiki pas
+testing**: pembacaan awal `$_FILES['var_file'][$kode]` salah struktur (PHP nge-array
+`$_FILES` multi-dimensi nama field per-KEY-DI-DALAM 'name'/'type'/dst, bukan
+sebaliknya) - selalu `false`, foto gak pernah ke-upload sebelum fix.
 
 ## Implementasi Daftar Hadir (item 1+4) — selesai
 

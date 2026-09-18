@@ -8,3 +8,8 @@
 templates/uploaded/*
 !templates/uploaded/.htaccess
 !templates/uploaded/.gitkeep
+
+# Foto dokumentasi (mis. Notula) - runtime, sama pola kayak templates/uploaded/.
+uploads/notula_foto/*
+!uploads/notula_foto/.htaccess
+!uploads/notula_foto/.gitkeep

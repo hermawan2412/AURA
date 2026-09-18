@@ -136,6 +136,9 @@ require __DIR__ . '/../views/layout_atas.php';
             <td style="font-size:0.78rem; color:var(--ink-dim);"><?php echo htmlspecialchars(substr((string) $sd['created_at'], 0, 16)); ?></td>
             <td>
               <a class="btn btn-secondary" href="surat_diterbitkan.php?edit=<?php echo (int) $sd['id']; ?>">Ubah</a>
+              <?php if ($sd['jenis_kode'] === 'undangan' && $sd['induk_id'] === null): ?>
+                <a class="btn btn-secondary" href="../surat/index.php?kode=notula&amp;dari=<?php echo (int) $sd['id']; ?>">Buat Notula</a>
+              <?php endif; ?>
               <form method="post" action="surat_diterbitkan.php" style="display:inline;" onsubmit="return confirm('Hapus baris riwayat ini? Dokumen yang sudah diunduh tidak ikut terhapus, cuma catatannya di sini.');">
                 <?php echo Csrf::field(); ?>
                 <input type="hidden" name="aksi" value="hapus">

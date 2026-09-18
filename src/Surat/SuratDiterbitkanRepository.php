@@ -17,7 +17,7 @@ class SuratDiterbitkanRepository
      * Dipanggil sesudah $resolver->resolveSemua() sukses, sebelum dokumen
      * di-stream - $nilai adalah array kode_variabel => nilai_string.
      */
-    public static function catat(array $jenisSurat, $subJenisSuratId, $templateSuratId, array $nilai, $dibuatOleh, $indukId = null)
+    public static function catat(array $jenisSurat, $subJenisSuratId, $templateSuratId, array $nilai, $dibuatOleh, $indukId = null, array $tabel = array())
     {
         $ambil = function ($kode) use ($nilai) {
             return ($kode !== null && $kode !== '' && isset($nilai[$kode])) ? $nilai[$kode] : null;
@@ -43,13 +43,14 @@ class SuratDiterbitkanRepository
 
         $stmt = Database::pdo()->prepare(
             'INSERT INTO surat_diterbitkan
-                (jenis_surat_id, sub_jenis_surat_id, template_surat_id, induk_id, nomor, tanggal_dokumen, ringkasan, nilai_lengkap, dibuat_oleh)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+                (jenis_surat_id, sub_jenis_surat_id, template_surat_id, induk_id, nomor, tanggal_dokumen, ringkasan, nilai_lengkap, tabel_lengkap, dibuat_oleh)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
         $stmt->execute(array(
             $jenisSurat['id'], $subJenisSuratId, $templateSuratId, $indukId,
             $nomor, $tanggalDokumen, $ringkasan !== null ? mb_substr((string) $ringkasan, 0, 255) : null,
             json_encode($nilai, JSON_UNESCAPED_UNICODE),
+            empty($tabel) ? null : json_encode($tabel, JSON_UNESCAPED_UNICODE),
             $dibuatOleh,
         ));
 
@@ -59,7 +60,7 @@ class SuratDiterbitkanRepository
     /** @return array daftar surat_diterbitkan + kolom jenis_surat/sub_jenis_surat terkait, terbaru dulu */
     public static function semua($jenisSuratId = null)
     {
-        $sql = 'SELECT sd.*, js.nama AS jenis_nama, js.icon AS jenis_icon, sjs.label AS sub_jenis_label
+        $sql = 'SELECT sd.*, js.nama AS jenis_nama, js.kode AS jenis_kode, js.icon AS jenis_icon, sjs.label AS sub_jenis_label
                 FROM surat_diterbitkan sd
                 JOIN jenis_surat js ON js.id = sd.jenis_surat_id
                 LEFT JOIN sub_jenis_surat sjs ON sjs.id = sd.sub_jenis_surat_id';

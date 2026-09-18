@@ -20,9 +20,9 @@ class DocxGenerator
      *                                 tabel pada template (dipakai oleh TemplateProcessor::cloneRow)
      * @param string $namaUnduhan      nama file .docx yang dilihat pengguna saat mengunduh
      */
-    public static function generateDanUnduh($templateRelPath, array $nilai, array $tabel, $namaUnduhan)
+    public static function generateDanUnduh($templateRelPath, array $nilai, array $tabel, $namaUnduhan, array $gambar = array())
     {
-        $tempPath = self::generate($templateRelPath, $nilai, $tabel);
+        $tempPath = self::generate($templateRelPath, $nilai, $tabel, $gambar);
         self::streamDanHapus($tempPath, $namaUnduhan);
     }
 
@@ -33,9 +33,14 @@ class DocxGenerator
      * generateZipDanUnduh()). Pemanggil WAJIB unlink() sendiri kalau tidak
      * jadi dipakai (generateZipDanUnduh() sudah menangani ini).
      *
+     * @param array $gambar placeholder => path absolut gambar (mis. ['foto_notula' => '/path/foto.jpg']) -
+     *                       disuntik pakai setImageValue(), BUKAN setValue(). Placeholder gambar yang
+     *                       kosong (opsional, tidak diisi) sudah otomatis ke-blank lewat $nilai (lihat
+     *                       NilaiResolver: sumber='manual' tanpa input jatuh ke placeholder_default=''),
+     *                       jadi tidak perlu ditangani terpisah di sini.
      * @return string path file .docx sementara
      */
-    public static function generate($templateRelPath, array $nilai, array $tabel)
+    public static function generate($templateRelPath, array $nilai, array $tabel, array $gambar = array())
     {
         $templatePath = __DIR__ . '/../' . $templateRelPath;
 
@@ -49,7 +54,17 @@ class DocxGenerator
         $processor = new TemplateProcessor($templatePath);
         $variabelDiTemplate = $processor->getVariables();
 
+        foreach ($gambar as $placeholder => $pathGambar) {
+            if (!in_array($placeholder, $variabelDiTemplate, true) || !is_file($pathGambar)) {
+                continue; // dokumen ini gak pakai placeholder gambar ini, atau berkas gak ada
+            }
+            $processor->setImageValue($placeholder, array('path' => $pathGambar, 'width' => 350, 'ratio' => true));
+        }
+
         foreach ($nilai as $placeholder => $teks) {
+            if (isset($gambar[$placeholder])) {
+                continue; // sudah ditangani sebagai gambar di atas, jangan di-setValue() teks jadi
+            }
             $processor->setValue($placeholder, self::escape($teks));
         }
 
@@ -89,7 +104,8 @@ class DocxGenerator
      * Generate beberapa dokumen sekaligus (1 submission -> N template aktif,
      * mis. Undangan [utama] + Daftar Hadir [lampiran]) dan alirkan sebagai
      * SATU berkas .zip - lebih simpel buat user daripada 2 unduhan terpisah.
-     * $dokumen: array of ['nilai' => array, 'tabel' => array, 'templateRelPath' => string, 'namaUnduhan' => string]
+     * $dokumen: array of ['nilai' => array, 'tabel' => array, 'gambar' => array, 'templateRelPath' => string, 'namaUnduhan' => string]
+     * ('gambar' opsional per entri)
      */
     public static function generateZipDanUnduh(array $dokumen, $namaZip)
     {
@@ -97,7 +113,7 @@ class DocxGenerator
         try {
             foreach ($dokumen as $d) {
                 $tempPaths[] = array(
-                    'path' => self::generate($d['templateRelPath'], $d['nilai'], $d['tabel']),
+                    'path' => self::generate($d['templateRelPath'], $d['nilai'], $d['tabel'], isset($d['gambar']) ? $d['gambar'] : array()),
                     'namaUnduhan' => $d['namaUnduhan'],
                 );
             }

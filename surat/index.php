@@ -16,6 +16,7 @@ use Aurat\Surat\VariabelRepository;
 use Aurat\Surat\BlokTabelRepository;
 use Aurat\Surat\NilaiResolver;
 use Aurat\Surat\SuratDiterbitkanRepository;
+use Aurat\Surat\FotoUpload;
 
 Auth::requireLogin();
 
@@ -52,10 +53,31 @@ function auratNamaUnduhan(array $jenisSurat, $subJenisKode, array $nilai, ?array
 }
 
 /**
+ * Ringkasan teks peserta rapat dari tabel_lengkap['peserta'] surat_diterbitkan
+ * sumber (mis. Daftar Hadir Undangan) - dipakai buat prefill field manual
+ * "peserta_rapat" Notula. Nomor urut ikut baris asli (sudah sesuai urutan
+ * drag-reorder pas Undangan dibuat), bukan dihitung ulang.
+ */
+function auratRingkasPeserta(array $baris)
+{
+    $lines = array();
+    foreach ($baris as $b) {
+        $nama = isset($b['nama']) ? trim((string) $b['nama']) : '';
+        if ($nama === '') {
+            continue;
+        }
+        $bagian = isset($b['bagian']) && trim((string) $b['bagian']) !== '' ? ' (' . trim((string) $b['bagian']) . ')' : '';
+        $no = isset($b['no']) ? $b['no'] : (count($lines) + 1);
+        $lines[] = $no . '. ' . $nama . $bagian;
+    }
+    return implode("\n", $lines);
+}
+
+/**
  * Validasi + resolusi nilai + generate dokumen dari data POST. Return string pesan
  * error kalau gagal; kalau berhasil, stream dokumen langsung lalu exit (tidak return).
  */
-function auratProsesGenerate(array $jenisSurat, $subJenisSuratId, $subJenisKode, array $templateSemua, array $variabelList, array $variabelManual, array $blokList, array $peranDipakai)
+function auratProsesGenerate(array $jenisSurat, $subJenisSuratId, $subJenisKode, array $templateSemua, array $variabelList, array $variabelManual, array $variabelFile, array $blokList, array $peranDipakai)
 {
     $pdo = Database::pdo();
 
@@ -124,6 +146,34 @@ function auratProsesGenerate(array $jenisSurat, $subJenisSuratId, $subJenisKode,
             return 'Isian "' . $v['label'] . '" wajib diisi.';
         }
         $inputManual[$v['kode']] = $nilaiPost;
+    }
+
+    // --- 4b. Validasi + simpan berkas gambar (variabel tipe_input='file') ---
+    // kode => path absolut file tersimpan, ATAU tidak ada key sama sekali kalau
+    // field opsional dikosongkan (DocxGenerator akan setValue('') placeholder-nya).
+    $gambar = array();
+    foreach ($variabelFile as $v) {
+        $berkas = isset($_FILES['var_file']['error'][$v['kode']]) ? array(
+            'name' => $_FILES['var_file']['name'][$v['kode']],
+            'type' => $_FILES['var_file']['type'][$v['kode']],
+            'tmp_name' => $_FILES['var_file']['tmp_name'][$v['kode']],
+            'error' => $_FILES['var_file']['error'][$v['kode']],
+            'size' => $_FILES['var_file']['size'][$v['kode']],
+        ) : array('error' => UPLOAD_ERR_NO_FILE);
+
+        try {
+            $path = FotoUpload::simpan($berkas);
+        } catch (RuntimeException $e) {
+            return 'Berkas "' . $v['label'] . '": ' . $e->getMessage();
+        }
+
+        if ($path === null) {
+            if (!empty($v['wajib'])) {
+                return 'Berkas "' . $v['label'] . '" wajib diunggah.';
+            }
+            continue;
+        }
+        $gambar[$v['kode']] = $path;
     }
 
     // --- 5. Bangun $tabel utk DocxGenerator dari tiap blok ---
@@ -218,7 +268,8 @@ function auratProsesGenerate(array $jenisSurat, $subJenisSuratId, $subJenisKode,
             $id = SuratDiterbitkanRepository::catat(
                 $jenisSurat, $subJenisSuratId, (int) $t['id'], $nilai,
                 isset($_SESSION['user_id']) ? $_SESSION['user_id'] : null,
-                $t['tipe_dokumen'] === 'utama' ? null : $indukId
+                $t['tipe_dokumen'] === 'utama' ? null : $indukId,
+                $tabel
             );
             if ($t['tipe_dokumen'] === 'utama') {
                 $indukId = $id;
@@ -235,7 +286,7 @@ function auratProsesGenerate(array $jenisSurat, $subJenisSuratId, $subJenisKode,
     try {
         if (count($templateSemua) === 1) {
             $namaUnduhan = auratNamaUnduhan($jenisSurat, $subJenisKode, $nilai);
-            DocxGenerator::generateDanUnduh(TemplateSuratRepository::path($templateSemua[0]), $nilai, $tabel, $namaUnduhan);
+            DocxGenerator::generateDanUnduh(TemplateSuratRepository::path($templateSemua[0]), $nilai, $tabel, $namaUnduhan, $gambar);
         } else {
             $dokumen = array();
             foreach ($templateSemua as $t) {
@@ -243,6 +294,7 @@ function auratProsesGenerate(array $jenisSurat, $subJenisSuratId, $subJenisKode,
                     'templateRelPath' => TemplateSuratRepository::path($t),
                     'nilai' => $nilai,
                     'tabel' => $tabel,
+                    'gambar' => $gambar,
                     'namaUnduhan' => auratNamaUnduhan($jenisSurat, $subJenisKode, $nilai, $t),
                 );
             }
@@ -341,9 +393,15 @@ foreach ($templateSemua as $t) {
         }
     }
 }
+// Variabel bertipe 'file' (mis. foto_notula) ditangani terpisah dari input
+// teks biasa - nilainya bukan string yang di-setValue(), tapi path gambar
+// yang di-setImageValue() (lihat DocxGenerator + FotoUpload).
 $variabelManual = array();
+$variabelFile = array();
 foreach ($variabelList as $v) {
-    if ($v['sumber'] === 'manual') {
+    if ($v['sumber'] === 'manual' && $v['tipe_input'] === 'file') {
+        $variabelFile[] = $v;
+    } elseif ($v['sumber'] === 'manual') {
         $variabelManual[] = $v;
     }
 }
@@ -361,10 +419,42 @@ $peranDipakai = array_values(array_filter($jenisSurat['peran_pegawai'], function
     return in_array($p['kode'], $peranKodeDipakai, true);
 }));
 
+// Prefill dari surat_diterbitkan lain (mis. Notula dibuat dari Undangan yang
+// sudah diterbitkan) - ?dari={surat_diterbitkan.id}, GET doang (bukan
+// mekanisme yang berlaku pas POST/validasi ulang - $_POST yang lebih
+// diutamakan kalau ada, lihat pemakaian $prefillNilai di form di bawah).
+// Kode variabel discocokin LANGSUNG antara sumber & tujuan (mis. hari,
+// tanggal_acara, waktu, tempat, nama_acara dipakai bareng Undangan+Notula) -
+// makanya variabel²  itu SENGAJA reuse kode yang sama, bukan bikin kode baru
+// per jenis_surat (lihat db/034_notula.sql).
+$prefillNilai = array();
+$dariId = $metode !== 'POST' && isset($_GET['dari']) ? (int) $_GET['dari'] : 0;
+if ($dariId > 0) {
+    $sumber = SuratDiterbitkanRepository::muatById($dariId);
+    if ($sumber) {
+        $nilaiSumber = json_decode((string) $sumber['nilai_lengkap'], true);
+        if (is_array($nilaiSumber)) {
+            $prefillNilai = $nilaiSumber;
+        }
+        // $tabel disimpan dg key = blok_tabel_surat.nama_anchor_kolom (bukan .kode) -
+        // lihat gimana $tabel dibangun di auratProsesGenerate() step 5. Blok peserta
+        // Undangan (db/033) nama_anchor_kolom='no', jadi 'no' di sini, bukan 'peserta'.
+        $tabelSumber = json_decode((string) $sumber['tabel_lengkap'], true);
+        if (is_array($tabelSumber) && isset($tabelSumber['no'])) {
+            $prefillNilai['peserta_rapat'] = auratRingkasPeserta($tabelSumber['no']);
+        }
+        if (!empty($sumber['nomor']) || !empty($sumber['tanggal_dokumen'])) {
+            $prefillNilai['dasar'] = 'Surat Undangan'
+                . (!empty($sumber['nomor']) ? ' Nomor ' . $sumber['nomor'] : '')
+                . (!empty($sumber['tanggal_dokumen']) ? ' tanggal ' . NilaiResolver::panggilFungsiPasca('tanggal_indonesia', array($sumber['tanggal_dokumen'])) : '');
+        }
+    }
+}
+
 $pesanError = '';
 
 if ($metode === 'POST') {
-    $pesanError = auratProsesGenerate($jenisSurat, $subJenisSuratId, $subJenisKode, $templateSemua, $variabelList, $variabelManual, $blokList, $peranDipakai);
+    $pesanError = auratProsesGenerate($jenisSurat, $subJenisSuratId, $subJenisKode, $templateSemua, $variabelList, $variabelManual, $variabelFile, $blokList, $peranDipakai);
     // Kalau sukses, auratProsesGenerate() sudah exit() setelah stream dokumen — baris di bawah ini hanya jalan kalau gagal.
 }
 
@@ -382,7 +472,7 @@ require __DIR__ . '/../views/layout_atas.php';
 <?php endif; ?>
 
 <div class="form-card">
-  <form method="post" action="index.php?kode=<?php echo urlencode($kode); ?><?php echo $subJenisKode !== '' ? '&amp;sub_jenis=' . urlencode($subJenisKode) : ''; ?>" id="formSurat">
+  <form method="post" action="index.php?kode=<?php echo urlencode($kode); ?><?php echo $subJenisKode !== '' ? '&amp;sub_jenis=' . urlencode($subJenisKode) : ''; ?>" id="formSurat" enctype="multipart/form-data">
     <?php echo Csrf::field(); ?>
     <?php if ($subJenisKode !== ''): ?>
       <input type="hidden" name="sub_jenis" value="<?php echo htmlspecialchars((string) $subJenisKode); ?>">
@@ -407,30 +497,45 @@ require __DIR__ . '/../views/layout_atas.php';
     <div class="form-section">
       <h4 style="font-family:var(--display); font-size:1rem;">Rincian</h4>
       <div class="grid-2">
-        <?php foreach ($variabelManual as $v): $vk = $v['kode']; $tipe = $v['tipe_input']; $lebarPenuh = ($tipe === 'textarea' || $tipe === 'textarea_datalist'); ?>
+        <?php foreach ($variabelManual as $v): $vk = $v['kode']; $tipe = $v['tipe_input'];
+              $lebarPenuh = ($tipe === 'textarea' || $tipe === 'textarea_datalist');
+              $nilaiIsi = isset($_POST['var'][$vk]) ? (string) $_POST['var'][$vk] : (isset($prefillNilai[$vk]) ? (string) $prefillNilai[$vk] : ''); ?>
           <div class="field"<?php echo $lebarPenuh ? ' style="grid-column:1 / -1;"' : ''; ?>>
             <label><?php echo htmlspecialchars((string) $v['label']); ?> <?php if (!empty($v['wajib'])): ?><span class="req">*</span><?php endif; ?></label>
             <?php if ($tipe === 'select'): $opsi = json_decode((string) $v['opsi_pilihan'], true); if (!is_array($opsi)) { $opsi = array(); } ?>
               <select name="var[<?php echo htmlspecialchars((string) $vk); ?>]" <?php echo !empty($v['wajib']) ? 'required' : ''; ?>>
                 <?php foreach ($opsi as $o): ?>
-                  <option value="<?php echo htmlspecialchars((string) $o); ?>"><?php echo htmlspecialchars((string) $o); ?></option>
+                  <option value="<?php echo htmlspecialchars((string) $o); ?>" <?php echo $o === $nilaiIsi ? 'selected' : ''; ?>><?php echo htmlspecialchars((string) $o); ?></option>
                 <?php endforeach; ?>
               </select>
             <?php elseif ($tipe === 'textarea'): ?>
-              <textarea name="var[<?php echo htmlspecialchars((string) $vk); ?>]" <?php echo !empty($v['wajib']) ? 'required' : ''; ?>></textarea>
+              <textarea name="var[<?php echo htmlspecialchars((string) $vk); ?>]" <?php echo !empty($v['wajib']) ? 'required' : ''; ?>><?php echo htmlspecialchars($nilaiIsi); ?></textarea>
             <?php elseif ($tipe === 'textarea_datalist'): $opsi = json_decode((string) $v['opsi_pilihan'], true); if (!is_array($opsi)) { $opsi = array(); } ?>
-              <textarea name="var[<?php echo htmlspecialchars((string) $vk); ?>]" list="dl_<?php echo htmlspecialchars((string) $vk); ?>" <?php echo !empty($v['wajib']) ? 'required' : ''; ?>></textarea>
+              <textarea name="var[<?php echo htmlspecialchars((string) $vk); ?>]" list="dl_<?php echo htmlspecialchars((string) $vk); ?>" <?php echo !empty($v['wajib']) ? 'required' : ''; ?>><?php echo htmlspecialchars($nilaiIsi); ?></textarea>
               <datalist id="dl_<?php echo htmlspecialchars((string) $vk); ?>">
                 <?php foreach ($opsi as $o): ?><option value="<?php echo htmlspecialchars((string) $o); ?>"><?php endforeach; ?>
               </datalist>
             <?php elseif ($tipe === 'date'): ?>
-              <input type="date" name="var[<?php echo htmlspecialchars((string) $vk); ?>]" <?php echo !empty($v['wajib']) ? 'required' : ''; ?>>
+              <input type="date" name="var[<?php echo htmlspecialchars((string) $vk); ?>]" value="<?php echo htmlspecialchars(preg_match('/^\d{4}-\d{2}-\d{2}$/', $nilaiIsi) ? $nilaiIsi : ''); ?>" <?php echo !empty($v['wajib']) ? 'required' : ''; ?>>
             <?php else: ?>
-              <input type="text" name="var[<?php echo htmlspecialchars((string) $vk); ?>]" <?php echo !empty($v['wajib']) ? 'required' : ''; ?>>
+              <input type="text" name="var[<?php echo htmlspecialchars((string) $vk); ?>]" value="<?php echo htmlspecialchars($nilaiIsi); ?>" <?php echo !empty($v['wajib']) ? 'required' : ''; ?>>
             <?php endif; ?>
           </div>
         <?php endforeach; ?>
       </div>
+    </div>
+    <?php endif; ?>
+
+    <?php if (!empty($variabelFile)): ?>
+    <div class="form-section">
+      <h4 style="font-family:var(--display); font-size:1rem;">Berkas</h4>
+      <?php foreach ($variabelFile as $v): $vk = $v['kode']; ?>
+        <div class="field">
+          <label><?php echo htmlspecialchars((string) $v['label']); ?> <?php if (!empty($v['wajib'])): ?><span class="req">*</span><?php endif; ?></label>
+          <input type="file" name="var_file[<?php echo htmlspecialchars((string) $vk); ?>]" accept="image/jpeg,image/png" <?php echo !empty($v['wajib']) ? 'required' : ''; ?>>
+          <p class="form-hint">JPG/PNG, maksimal 5MB.</p>
+        </div>
+      <?php endforeach; ?>
     </div>
     <?php endif; ?>
 
