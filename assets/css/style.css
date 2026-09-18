@@ -87,7 +87,7 @@ a{color:inherit;}
 .badge-belum-diisi{background:var(--surface-2); color:var(--ink-dim);}
 
 .shell{display:flex; min-height:100vh;}
-.sidebar{width:240px; flex:0 0 240px; background:var(--surface); border-right:1px solid var(--border); display:flex; flex-direction:column; padding:24px 16px; gap:24px; position:sticky; top:0; height:100vh;}
+.sidebar{width:240px; flex:0 0 240px; background:var(--surface); border-right:1px solid var(--border); display:flex; flex-direction:column; padding:24px 16px; gap:24px; position:sticky; top:0; height:100vh; overflow-y:auto;}
 .brand{display:flex; align-items:center; gap:11px; padding:0 6px;}
 .brand-mark{width:32px; height:32px; object-fit:contain;}
 .brand-text{font-family:var(--display); font-weight:700; font-size:1.02rem; line-height:1.15;}
