@@ -25,7 +25,7 @@ FROM jenis_surat js WHERE js.kode = 'notula'
   AND NOT EXISTS (SELECT 1 FROM peran_pegawai_surat p WHERE p.jenis_surat_id = js.id AND p.kode = 'notulis');
 
 INSERT INTO peran_pegawai_surat (jenis_surat_id, kode, label, wajib, urutan_tampil)
-SELECT js.id, 'pejabat_acara', 'Pejabat yang Punya Acara', 1, 20
+SELECT js.id, 'pejabat_acara', 'Pejabat yang Mengundang', 1, 20
 FROM jenis_surat js WHERE js.kode = 'notula'
   AND NOT EXISTS (SELECT 1 FROM peran_pegawai_surat p WHERE p.jenis_surat_id = js.id AND p.kode = 'pejabat_acara');
 
@@ -62,11 +62,11 @@ SELECT 'notulis_nip', 'NIP (Notulis)', 'text', 'pegawai', 'nip'
 WHERE NOT EXISTS (SELECT 1 FROM variabel_surat WHERE kode = 'notulis_nip');
 
 INSERT INTO variabel_surat (kode, label, tipe_input, sumber, field_pegawai)
-SELECT 'pejabat_acara_nama_lengkap', 'Nama Lengkap (Pejabat yang Punya Acara)', 'text', 'pegawai', NULL
+SELECT 'pejabat_acara_nama_lengkap', 'Nama Lengkap (Pejabat yang Mengundang)', 'text', 'pegawai', NULL
 WHERE NOT EXISTS (SELECT 1 FROM variabel_surat WHERE kode = 'pejabat_acara_nama_lengkap');
 
 INSERT INTO variabel_surat (kode, label, tipe_input, sumber, field_pegawai)
-SELECT 'pejabat_acara_nip', 'NIP (Pejabat yang Punya Acara)', 'text', 'pegawai', 'nip'
+SELECT 'pejabat_acara_nip', 'NIP (Pejabat yang Mengundang)', 'text', 'pegawai', 'nip'
 WHERE NOT EXISTS (SELECT 1 FROM variabel_surat WHERE kode = 'pejabat_acara_nip');
 
 -- notulis_nama_lengkap butuh fungsi_pasca nama_bergelar (konsisten sama pola

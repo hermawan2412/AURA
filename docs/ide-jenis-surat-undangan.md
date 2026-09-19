@@ -32,7 +32,7 @@ gak ada tabel baru khusus notula. 2 keputusan yang disepakati sebelum build:
   `NilaiResolver` sudah jatuh ke `placeholder_default=''` buat variabel manual yang
   gak diisi, jadi gak perlu logic blanking terpisah.
 
-Notulis & Pejabat yang Punya Acara: 2 `peran_pegawai_surat` baru (`notulis`,
+Notulis & Pejabat yang Mengundang: 2 `peran_pegawai_surat` baru (`notulis`,
 `pejabat_acara`) - **TIDAK ada akun/login baru**, cuma dropdown pilih pegawai, sama
 kayak `petugas_cuti`/`diperintah` yang sudah ada di app lain.
 
