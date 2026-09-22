@@ -249,4 +249,96 @@ window.AuratPicker = window.AuratPicker || {};
 
         render();
     };
+
+    /**
+     * List teks bebas berurutan (bukan pegawai), mis. Dasar Hukum surat_tugas — tambah,
+     * hapus, drag-reorder. Nomor urut cuma tampilan; nilai dikirim urut via hidden input
+     * array, backend (surat/index.php §4) yang nomorin ulang jadi "1. ...\n2. ..." dst.
+     *
+     * config: { kode, listId, inputId, tambahId, items: string[] }
+     */
+    AuratPicker.initDaftarTeks = function (config) {
+        var list = document.getElementById(config.listId);
+        var input = document.getElementById(config.inputId);
+        var tambah = document.getElementById(config.tambahId);
+        if (!list || !input || !tambah) {
+            return;
+        }
+
+        var items = (config.items || []).slice();
+        var dragFrom = null;
+
+        function render() {
+            list.innerHTML = '';
+            items.forEach(function (teks, idx) {
+                var li = document.createElement('li');
+                li.draggable = true;
+                li.style.cssText = 'display:flex; align-items:center; gap:8px; padding:6px 8px; border:1px solid var(--border-strong); border-radius:6px; margin-bottom:6px;';
+
+                var handle = document.createElement('span');
+                handle.textContent = '⠿';
+                handle.style.cssText = 'cursor:grab; color:var(--ink-dim);';
+                li.appendChild(handle);
+
+                var num = document.createElement('span');
+                num.textContent = (idx + 1) + '.';
+                num.style.cssText = 'font-weight:600; color:var(--ink-dim); min-width:1.5em;';
+                li.appendChild(num);
+
+                var span = document.createElement('span');
+                span.textContent = teks;
+                span.style.flex = '1';
+                li.appendChild(span);
+
+                var hidden = document.createElement('input');
+                hidden.type = 'hidden';
+                hidden.name = 'var[' + config.kode + '][]';
+                hidden.value = teks;
+                li.appendChild(hidden);
+
+                var rm = document.createElement('button');
+                rm.type = 'button';
+                rm.textContent = '×';
+                rm.style.cssText = 'background:none; border:none; cursor:pointer; font-size:1rem; color:var(--ink-dim);';
+                rm.addEventListener('click', function () { items.splice(idx, 1); render(); });
+                li.appendChild(rm);
+
+                li.addEventListener('dragstart', function () { dragFrom = idx; });
+                li.addEventListener('dragover', function (e) { e.preventDefault(); });
+                li.addEventListener('drop', function (e) {
+                    e.preventDefault();
+                    if (dragFrom === null || dragFrom === idx) {
+                        return;
+                    }
+                    var moved = items.splice(dragFrom, 1)[0];
+                    items.splice(idx, 0, moved);
+                    dragFrom = null;
+                    render();
+                });
+
+                list.appendChild(li);
+            });
+        }
+
+        function tambahItem() {
+            var teks = input.value.trim();
+            if (!teks) {
+                return;
+            }
+            items.push(teks);
+            input.value = '';
+            render();
+            input.focus();
+        }
+
+        tambah.addEventListener('click', tambahItem);
+        input.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                tambahItem();
+            }
+        });
+
+        render();
+    };
 })(window.AuratPicker);

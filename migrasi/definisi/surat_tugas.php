@@ -30,6 +30,8 @@ return array(
               'tipe_input' => 'text', 'wajib_default' => 1, 'urutan_tampil' => 10),
         array('kode' => 'tanggal_surat', 'label' => 'Tanggal Surat', 'sumber' => 'sistem',
               'sistem_kode' => 'tanggal_sekarang', 'fungsi_pasca' => 'tanggal_indonesia', 'urutan_tampil' => 20),
+        array('kode' => 'dasar_hukum_tugas', 'label' => 'Dasar Hukum (satu item per baris, urutan bisa diseret)', 'sumber' => 'manual',
+              'tipe_input' => 'daftar_teks', 'wajib_default' => 1, 'urutan_tampil' => 16),
         array('kode' => 'uraian_tugas', 'label' => 'Uraian Tugas', 'sumber' => 'manual',
               'tipe_input' => 'textarea', 'wajib_default' => 1, 'urutan_tampil' => 30),
 

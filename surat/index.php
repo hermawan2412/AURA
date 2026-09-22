@@ -141,6 +141,27 @@ function auratProsesGenerate(array $jenisSurat, $subJenisSuratId, $subJenisKode,
     // --- 4. Validasi + kumpulkan variabel manual ---
     $inputManual = array();
     foreach ($variabelManual as $v) {
+        if ($v['tipe_input'] === 'daftar_teks') {
+            $itemsPost = isset($_POST['var'][$v['kode']]) && is_array($_POST['var'][$v['kode']])
+                ? $_POST['var'][$v['kode']] : array();
+            $items = array();
+            foreach ($itemsPost as $item) {
+                $item = trim((string) $item);
+                if ($item !== '') {
+                    $items[] = $item;
+                }
+            }
+            if (empty($items) && !empty($v['wajib'])) {
+                return 'Isian "' . $v['label'] . '" wajib diisi minimal satu item.';
+            }
+            $baris = array();
+            foreach ($items as $i => $item) {
+                $baris[] = ($i + 1) . '. ' . $item;
+            }
+            $inputManual[$v['kode']] = implode("\n", $baris);
+            continue;
+        }
+
         $nilaiPost = isset($_POST['var'][$v['kode']]) ? trim((string) $_POST['var'][$v['kode']]) : '';
         if ($nilaiPost === '' && !empty($v['wajib'])) {
             return 'Isian "' . $v['label'] . '" wajib diisi.';
@@ -498,11 +519,18 @@ require __DIR__ . '/../views/layout_atas.php';
       <h4 style="font-family:var(--display); font-size:1rem;">Rincian</h4>
       <div class="grid-2">
         <?php foreach ($variabelManual as $v): $vk = $v['kode']; $tipe = $v['tipe_input'];
-              $lebarPenuh = ($tipe === 'textarea' || $tipe === 'textarea_datalist');
-              $nilaiIsi = isset($_POST['var'][$vk]) ? (string) $_POST['var'][$vk] : (isset($prefillNilai[$vk]) ? (string) $prefillNilai[$vk] : ''); ?>
+              $lebarPenuh = ($tipe === 'textarea' || $tipe === 'textarea_datalist' || $tipe === 'daftar_teks');
+              $nilaiIsi = ($tipe === 'daftar_teks') ? '' : (isset($_POST['var'][$vk]) ? (string) $_POST['var'][$vk] : (isset($prefillNilai[$vk]) ? (string) $prefillNilai[$vk] : '')); ?>
           <div class="field"<?php echo $lebarPenuh ? ' style="grid-column:1 / -1;"' : ''; ?>>
             <label><?php echo htmlspecialchars((string) $v['label']); ?> <?php if (!empty($v['wajib'])): ?><span class="req">*</span><?php endif; ?></label>
-            <?php if ($tipe === 'select'): $opsi = json_decode((string) $v['opsi_pilihan'], true); if (!is_array($opsi)) { $opsi = array(); } ?>
+            <?php if ($tipe === 'daftar_teks'): ?>
+              <ul id="daftarList_<?php echo htmlspecialchars((string) $vk); ?>" style="list-style:none; padding:0; margin:0 0 8px;"></ul>
+              <div style="display:flex; gap:8px;">
+                <input type="text" id="daftarInput_<?php echo htmlspecialchars((string) $vk); ?>" placeholder="Tambah item&hellip;" style="flex:1;">
+                <button type="button" id="daftarTambah_<?php echo htmlspecialchars((string) $vk); ?>" class="btn">Tambah</button>
+              </div>
+              <span class="form-hint">Seret item untuk mengubah urutan. Nomor urut otomatis.</span>
+            <?php elseif ($tipe === 'select'): $opsi = json_decode((string) $v['opsi_pilihan'], true); if (!is_array($opsi)) { $opsi = array(); } ?>
               <select name="var[<?php echo htmlspecialchars((string) $vk); ?>]" <?php echo !empty($v['wajib']) ? 'required' : ''; ?>>
                 <?php foreach ($opsi as $o): ?>
                   <option value="<?php echo htmlspecialchars((string) $o); ?>" <?php echo $o === $nilaiIsi ? 'selected' : ''; ?>><?php echo htmlspecialchars((string) $o); ?></option>
@@ -595,6 +623,19 @@ require __DIR__ . '/../views/layout_atas.php';
       'kosongId' => 'blokKosong_' . $bk,
       'kolom'    => $blok['kolom'],
       'apiUrl'   => '../api/pegawai_cari.php',
+  ), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>);
+  <?php endforeach; ?>
+
+  <?php foreach ($variabelManual as $v): if ($v['tipe_input'] !== 'daftar_teks') { continue; } $vk = $v['kode'];
+        $itemsAwal = (isset($_POST['var'][$vk]) && is_array($_POST['var'][$vk]))
+            ? array_values(array_filter(array_map('trim', $_POST['var'][$vk]), function ($s) { return $s !== ''; }))
+            : array(); ?>
+  AuratPicker.initDaftarTeks(<?php echo json_encode(array(
+      'kode'     => $vk,
+      'listId'   => 'daftarList_' . $vk,
+      'inputId'  => 'daftarInput_' . $vk,
+      'tambahId' => 'daftarTambah_' . $vk,
+      'items'    => $itemsAwal,
   ), JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_QUOT | JSON_HEX_AMP); ?>);
   <?php endforeach; ?>
 

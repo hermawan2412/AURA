@@ -215,6 +215,7 @@ require __DIR__ . '/../views/layout_atas.php';
                 <option value="date">Tanggal</option>
                 <option value="select">Pilihan (dropdown)</option>
                 <option value="textarea_datalist">Teks panjang + saran pilihan</option>
+                <option value="daftar_teks">Daftar teks berurutan (bisa diseret/drag)</option>
               </select>
             </div>
             <div class="field">
