@@ -19,10 +19,14 @@ class DocxGenerator
      *                                 nama_blok harus cocok dengan placeholder di baris pertama
      *                                 tabel pada template (dipakai oleh TemplateProcessor::cloneRow)
      * @param string $namaUnduhan      nama file .docx yang dilihat pengguna saat mengunduh
+     * @param array  $hapusBarisJika   opsional: nama placeholder yang baris tabelnya (<w:tr>)
+     *                                 mau dihapus utuh dari dokumen kalau ada di template -
+     *                                 dipakai jenis surat dgn tata letak alternatif kondisional
+     *                                 (mis. surat_tugas: tabel vs baris "Nama : .." pas 1 pegawai)
      */
-    public static function generateDanUnduh($templateRelPath, array $nilai, array $tabel, $namaUnduhan, array $gambar = array())
+    public static function generateDanUnduh($templateRelPath, array $nilai, array $tabel, $namaUnduhan, array $gambar = array(), array $hapusBarisJika = array())
     {
-        $tempPath = self::generate($templateRelPath, $nilai, $tabel, $gambar);
+        $tempPath = self::generate($templateRelPath, $nilai, $tabel, $gambar, $hapusBarisJika);
         self::streamDanHapus($tempPath, $namaUnduhan);
     }
 
@@ -40,7 +44,7 @@ class DocxGenerator
      *                       jadi tidak perlu ditangani terpisah di sini.
      * @return string path file .docx sementara
      */
-    public static function generate($templateRelPath, array $nilai, array $tabel, array $gambar = array())
+    public static function generate($templateRelPath, array $nilai, array $tabel, array $gambar = array(), array $hapusBarisJika = array())
     {
         $templatePath = __DIR__ . '/../' . $templateRelPath;
 
@@ -53,6 +57,12 @@ class DocxGenerator
 
         $processor = new TemplateProcessor($templatePath);
         $variabelDiTemplate = $processor->getVariables();
+
+        // Placeholder yg gak ada di template INI dilewati diam-diam oleh replaceXmlBlock()
+        // sendiri (findMacro() balikin -1) - sama kayak pola skip $tabel/$gambar di bawah.
+        foreach ($hapusBarisJika as $placeholderBaris) {
+            $processor->replaceXmlBlock($placeholderBaris, '', 'w:tr');
+        }
 
         foreach ($gambar as $placeholder => $pathGambar) {
             if (!in_array($placeholder, $variabelDiTemplate, true) || !is_file($pathGambar)) {

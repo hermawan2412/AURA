@@ -199,10 +199,13 @@ function auratProsesGenerate(array $jenisSurat, $subJenisSuratId, $subJenisKode,
 
     // --- 5. Bangun $tabel utk DocxGenerator dari tiap blok ---
     $tabel = array();
+    $hapusBarisJika = array();
+    $nilaiTunggal = array();
     $kolomPegawaiDiizinkan = NilaiResolver::kolomPegawaiDiizinkan();
     foreach ($blokList as $blok) {
         $blokKode = $blok['kode'];
         $barisTabel = array();
+        $pegawaiValidBaris = array();
 
         foreach ($idBlokPerBlok[$blokKode] as $idx => $id) {
             if (!isset($pegawaiById[$id])) {
@@ -245,6 +248,7 @@ function auratProsesGenerate(array $jenisSurat, $subJenisSuratId, $subJenisKode,
                 }
             }
             $barisTabel[] = $baris;
+            $pegawaiValidBaris[] = $p;
         }
 
         if (count($barisTabel) < (int) $blok['minimal_baris']) {
@@ -252,7 +256,36 @@ function auratProsesGenerate(array $jenisSurat, $subJenisSuratId, $subJenisKode,
             return 'Tabel "' . $label . '" minimal harus berisi ' . $blok['minimal_baris'] . ' baris (setelah validasi pegawai).';
         }
 
-        $tabel[$blok['nama_anchor_kolom']] = $barisTabel;
+        // Surat Tugas dgn 1 pegawai: tabel diganti baris "Nama : .. / NIP : .." (lebih
+        // ringkas drpd tabel 1 baris) - lihat blok baru di template surat_tugas.docx.
+        // Placeholder *_tunggal & blok_multi_pegawai HANYA ada di template surat_tugas
+        // jadi generic tetap aman (DocxGenerator skip diam-diam kalau placeholder gak
+        // ketemu di jenis surat lain, sama kayak $tabel lain).
+        if ($jenisSurat['kode'] === 'surat_tugas' && $blokKode === 'no' && count($barisTabel) === 1) {
+            $p1 = $pegawaiValidBaris[0];
+            try {
+                $nilaiTunggal['nama_tunggal'] = NilaiResolver::panggilFungsiPasca('nama_bergelar', array($p1));
+                $nilaiTunggal['jabatan_satker_tunggal'] = NilaiResolver::panggilFungsiPasca('jabatan_satuan_kerja', array($p1));
+            } catch (RuntimeException $e) {
+                return $e->getMessage();
+            }
+            $nilaiTunggal['nip_tunggal'] = isset($p1['nip']) ? (string) $p1['nip'] : '';
+            $nilaiTunggal['gol_tunggal'] = isset($p1['golongan_ruang']) ? (string) $p1['golongan_ruang'] : '';
+            $hapusBarisJika[] = 'blok_multi_pegawai';
+            $hapusBarisJika[] = 'no';
+        } else {
+            $tabel[$blok['nama_anchor_kolom']] = $barisTabel;
+            if ($jenisSurat['kode'] === 'surat_tugas' && $blokKode === 'no') {
+                // Baris tabel dipakai (bukan format tunggal) - bersihkan marker penanda
+                // baris header (lihat blok_multi_pegawai di template) & hapus 4 baris
+                // "Nama : .. / NIP : .." yg gak kepake.
+                $nilaiTunggal['blok_multi_pegawai'] = '';
+                $hapusBarisJika[] = 'nama_tunggal';
+                $hapusBarisJika[] = 'nip_tunggal';
+                $hapusBarisJika[] = 'jabatan_satker_tunggal';
+                $hapusBarisJika[] = 'gol_tunggal';
+            }
+        }
     }
 
     // --- 6. Resolusi nilai variabel ---
@@ -274,6 +307,7 @@ function auratProsesGenerate(array $jenisSurat, $subJenisSuratId, $subJenisKode,
     try {
         $resolver = new NilaiResolver($variabelList, $inputManual, $pegawaiTerpilih, $konteksSistem);
         $nilai = $resolver->resolveSemua();
+        $nilai = array_merge($nilai, $nilaiTunggal);
     } catch (RuntimeException $e) {
         return $e->getMessage();
     }
@@ -307,7 +341,7 @@ function auratProsesGenerate(array $jenisSurat, $subJenisSuratId, $subJenisKode,
     try {
         if (count($templateSemua) === 1) {
             $namaUnduhan = auratNamaUnduhan($jenisSurat, $subJenisKode, $nilai);
-            DocxGenerator::generateDanUnduh(TemplateSuratRepository::path($templateSemua[0]), $nilai, $tabel, $namaUnduhan, $gambar);
+            DocxGenerator::generateDanUnduh(TemplateSuratRepository::path($templateSemua[0]), $nilai, $tabel, $namaUnduhan, $gambar, $hapusBarisJika);
         } else {
             $dokumen = array();
             foreach ($templateSemua as $t) {
