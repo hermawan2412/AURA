@@ -37,9 +37,14 @@ class Auth
             return array('success' => false, 'message' => 'Nama pengguna atau kata sandi salah.');
         }
 
+        if (!session_regenerate_id(true)) {
+            return array('success' => false, 'message' => 'Sesi tidak dapat diperbarui. Silakan coba masuk kembali.');
+        }
+
         $update = $pdo->prepare('UPDATE user_login SET percobaan_gagal = 0, terkunci_hingga = NULL, login_terakhir_at = NOW() WHERE id = ?');
         $update->execute(array($user['id']));
 
+        unset($_SESSION['csrf_token']);
         $_SESSION['user_id']        = (int) $user['id'];
         $_SESSION['nama_tampilan']  = $user['nama_tampilan'];
         $_SESSION['username']       = $user['username'];

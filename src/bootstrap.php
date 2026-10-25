@@ -2,6 +2,7 @@
 
 $config = require __DIR__ . '/../config/config.php';
 
+ini_set('session.use_strict_mode', '1');
 session_name($config['session_name']);
 session_set_cookie_params(array(
     'lifetime' => 0,
