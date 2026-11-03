@@ -126,6 +126,7 @@ class DocxGenerator
 
         $tempPath = tempnam(sys_get_temp_dir(), 'surat_');
         $processor->saveAs($tempPath);
+        self::tahanBarisTerakhirDiBerkas($tempPath);
 
         return $tempPath;
     }
@@ -172,6 +173,45 @@ class DocxGenerator
         }
 
         self::streamZipDanHapus($zipPath, $namaZip);
+    }
+
+    private static function tahanBarisTerakhirDiBerkas($path)
+    {
+        $zip = new \ZipArchive();
+        if ($zip->open($path) !== true) {
+            throw new RuntimeException('Dokumen hasil tidak bisa dibuka untuk pengaturan halaman.');
+        }
+        $xml = $zip->getFromName('word/document.xml');
+        $baru = self::tahanBarisTerakhir($xml);
+        if ($baru !== $xml) {
+            $zip->addFromString('word/document.xml', $baru);
+        }
+        $zip->close();
+    }
+
+    /**
+     * Kalau paragraf tepat setelah tabel memakai keepNext (dipasang di template), baris terakhir
+     * tabel ikut keepNext supaya turun halaman bersama blok TTD. Hanya di dokumen hasil, sebab
+     * di template baris itu masih satu baris yang digandakan cloneRow() - kalau dipasang di sana,
+     * semua baris jadi saling menahan.
+     */
+    public static function tahanBarisTerakhir($xml)
+    {
+        $penanda = '</w:tr></w:tbl><w:p><w:pPr><w:keepNext/>';
+        $posisi = 0;
+        while (($akhir = strpos($xml, $penanda, $posisi)) !== false) {
+            $awal = max((int) strrpos(substr($xml, 0, $akhir), '<w:tr>'), (int) strrpos(substr($xml, 0, $akhir), '<w:tr '));
+            $baris = preg_replace_callback('/<w:p(?: [^>]*)?>(<w:pPr>(<w:pStyle [^>]*\/>)?)?/', function ($m) {
+                if (!empty($m[1])) {
+                    return $m[0] . '<w:keepNext/>';
+                }
+                return $m[0] . '<w:pPr><w:keepNext/></w:pPr>';
+            }, substr($xml, $awal, $akhir - $awal));
+            $xml = substr($xml, 0, $awal) . $baris . substr($xml, $akhir);
+            $posisi = $awal + strlen($baris) + strlen($penanda);
+        }
+
+        return $xml;
     }
 
     /**

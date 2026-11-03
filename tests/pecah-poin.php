@@ -25,4 +25,20 @@ cek("KEPUTUSAN ini berlaku", array(array('', 'KEPUTUSAN ini berlaku')));
 cek("bahwa tanpa penanda", array(array('', 'bahwa tanpa penanda')));
 cek('', array(array('', '')));
 
+// Hanya baris terakhir yang ditahan, dan hanya kalau paragraf sesudah tabel memakai keepNext.
+$baris = '<w:tr><w:tc><w:p><w:r><w:t>%s</w:t></w:r></w:p></w:tc></w:tr>';
+$tabel = '<w:tbl>' . sprintf($baris, '1') . sprintf($baris, '2');
+$tahan = '<w:tr><w:tc><w:p><w:pPr><w:keepNext/></w:pPr><w:r><w:t>2</w:t></w:r></w:p></w:tc></w:tr>';
+$sesudah = '</w:tbl><w:p><w:pPr><w:keepNext/></w:pPr></w:p>';
+$hasil = DocxGenerator::tahanBarisTerakhir($tabel . $sesudah);
+if ($hasil !== '<w:tbl>' . sprintf($baris, '1') . $tahan . $sesudah) {
+    fwrite(STDERR, "GAGAL tahanBarisTerakhir: $hasil\n");
+    exit(1);
+}
+$tanpa = $tabel . '</w:tbl><w:p><w:pPr><w:spacing/></w:pPr></w:p>';
+if (DocxGenerator::tahanBarisTerakhir($tanpa) !== $tanpa) {
+    fwrite(STDERR, "GAGAL: tabel tanpa keepNext ikut berubah\n");
+    exit(1);
+}
+
 echo "OK\n";
