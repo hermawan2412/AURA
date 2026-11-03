@@ -175,19 +175,17 @@ class DocxGenerator
     }
 
     /**
-     * Escape untuk XML Word, plus konversi newline literal menjadi <w:br/>
-     * — tanpa ini, isi field multi-baris (mis. textarea) akan tampil
-     * menyatu jadi satu baris saat dibuka di Word.
-     */
-    /**
      * Pecah teks per baris jadi [[penanda, isi], ...]. Penanda: "a." / "1." / "a)" / KESATU..;
      * baris tanpa penanda dianggap lanjutan poin sebelumnya (baris kosong dibuang).
+     * Label yang ikut tertempel dari Word ("Menimbang : a. ...") dibuang. Huruf wajib diikuti
+     * spasi supaya "R.I. Nomor ..." di awal baris tidak dianggap penanda.
      */
     public static function pecahPoin($teks)
     {
-        $re = '/^\s*((?:KE(?:SATU|DUABELAS|DUA|TIGA|EMPAT|LIMA|ENAM|TUJUH|DELAPAN|SEMBILAN|SEPULUH|SEBELAS)\b)|(?:[A-Za-z]|\d{1,2})[.)])\s*:?\s*(.*)$/u';
+        $re = '/^\s*((?:KE(?:SATU|DUABELAS|DUA|TIGA|EMPAT|LIMA|ENAM|TUJUH|DELAPAN|SEMBILAN|SEPULUH|SEBELAS)\b)|[A-Za-z][.)](?=\s)|\d{1,2}[.)](?!\d))\s*:?\s*(.*)$/u';
         $poin = array();
         foreach (preg_split('/\R/u', (string) $teks) as $baris) {
+            $baris = preg_replace('/^\s*(?:Menimbang|Mengingat|Menetapkan)\s*:\s*/iu', '', $baris);
             if (trim($baris) === '') {
                 continue;
             }
@@ -203,6 +201,11 @@ class DocxGenerator
         return $poin ?: array(array('', ''));
     }
 
+    /**
+     * Escape untuk XML Word, plus konversi newline literal menjadi <w:br/>
+     * — tanpa ini, isi field multi-baris (mis. textarea) akan tampil
+     * menyatu jadi satu baris saat dibuka di Word.
+     */
     private static function escape($teks)
     {
         $aman = htmlspecialchars((string) $teks, ENT_QUOTES, 'UTF-8');

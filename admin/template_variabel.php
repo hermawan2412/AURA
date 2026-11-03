@@ -123,6 +123,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $pathAbsolut = __DIR__ . '/../' . TemplateSuratRepository::path($template);
 $placeholderTerdeteksi = is_file($pathAbsolut) ? TemplateUpload::deteksiPlaceholder($pathAbsolut) : array();
+// ${menimbang_isi} dkk. diisi DocxGenerator dari variabel induknya (menimbang), bukan variabel sendiri -
+// tanpa ini admin diminta memetakannya, dan "menimbang" tampak hilang lalu bisa terlepas dari form.
+$placeholderTerdeteksi = preg_replace('/^(menimbang|mengingat|diktum)_(lbl|t|no|isi)$/', '$1', $placeholderTerdeteksi);
 $variabelTerpasang = VariabelRepository::variabelUntukTemplate($templateSuratId);
 
 $kodeTerpasang = array();
