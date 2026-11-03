@@ -71,6 +71,26 @@ class DocxGenerator
             $processor->setImageValue($placeholder, array('path' => $pathGambar, 'width' => 350, 'ratio' => true));
         }
 
+        // Poin bernomor (Menimbang a,b,c / Mengingat 1,2,3 / Diktum KESATU,KEDUA): kalau template
+        // punya ${kode_isi}, tiap poin jadi 1 baris tabel tanpa garis (nomor | isi) supaya baris
+        // lanjutan rata dgn isi. Template lama tanpa ${kode_isi} tetap diisi setValue() biasa.
+        foreach (array('menimbang', 'mengingat', 'diktum') as $kode) {
+            if (!in_array($kode . '_isi', $variabelDiTemplate, true)) {
+                continue;
+            }
+            $poin = self::pecahPoin(isset($nilai[$kode]) ? $nilai[$kode] : '');
+            $processor->cloneRow($kode . '_isi', count($poin));
+            foreach ($poin as $i => $p) {
+                $n = $i + 1;
+                // ${kode_lbl} (judul "Menimbang") & ${kode_t} (":") hanya tampil di baris pertama
+                $processor->setValue($kode . '_lbl#' . $n, $i === 0 ? ucfirst($kode) : '');
+                $processor->setValue($kode . '_t#' . $n, $i === 0 ? ':' : '');
+                $processor->setValue($kode . '_no#' . $n, self::escape($p[0]));
+                $processor->setValue($kode . '_isi#' . $n, self::escape($p[1]));
+            }
+            unset($nilai[$kode]);
+        }
+
         foreach ($nilai as $placeholder => $teks) {
             if (isset($gambar[$placeholder])) {
                 continue; // sudah ditangani sebagai gambar di atas, jangan di-setValue() teks jadi
@@ -159,6 +179,30 @@ class DocxGenerator
      * — tanpa ini, isi field multi-baris (mis. textarea) akan tampil
      * menyatu jadi satu baris saat dibuka di Word.
      */
+    /**
+     * Pecah teks per baris jadi [[penanda, isi], ...]. Penanda: "a." / "1." / "a)" / KESATU..;
+     * baris tanpa penanda dianggap lanjutan poin sebelumnya (baris kosong dibuang).
+     */
+    public static function pecahPoin($teks)
+    {
+        $re = '/^\s*((?:KE(?:SATU|DUABELAS|DUA|TIGA|EMPAT|LIMA|ENAM|TUJUH|DELAPAN|SEMBILAN|SEPULUH|SEBELAS)\b)|(?:[A-Za-z]|\d{1,2})[.)])\s*:?\s*(.*)$/u';
+        $poin = array();
+        foreach (preg_split('/\R/u', (string) $teks) as $baris) {
+            if (trim($baris) === '') {
+                continue;
+            }
+            if (preg_match($re, $baris, $m)) {
+                $poin[] = array($m[1], rtrim($m[2]));
+            } elseif ($poin) {
+                $poin[count($poin) - 1][1] .= "\n" . trim($baris);
+            } else {
+                $poin[] = array('', trim($baris));
+            }
+        }
+
+        return $poin ?: array(array('', ''));
+    }
+
     private static function escape($teks)
     {
         $aman = htmlspecialchars((string) $teks, ENT_QUOTES, 'UTF-8');
