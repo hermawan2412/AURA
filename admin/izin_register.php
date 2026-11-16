@@ -92,19 +92,19 @@ require __DIR__ . '/../views/layout_atas.php';
   </div>
 </form>
 
-<p class="note" style="margin-bottom:10px;">Total <?php echo $total; ?>
+<p class="redup" style="margin-bottom:10px;">Total <?php echo $total; ?>
   <?php foreach ($jumlah as $st => $n): ?> · <?php echo h(Permohonan::LABEL_STATUS[$st]); ?> <?php echo (int) $n; ?><?php endforeach; ?></p>
 
 <div class="table-wrap" style="max-width:980px;">
   <table>
     <thead><tr><th>Tanggal</th><th>Pemohon</th><th>Jenis / jam</th><th>Pemberi</th><th>Status</th><th>Nomor</th><th></th></tr></thead>
     <tbody>
-    <?php if (!$baris): ?><tr><td colspan="7" class="note">Tidak ada data.</td></tr><?php endif; ?>
+    <?php if (!$baris): ?><tr><td colspan="7" class="redup">Tidak ada data.</td></tr><?php endif; ?>
     <?php foreach ($baris as $p): ?>
       <tr>
         <td><?php echo h(Formatter::tanggalIndonesia($p['tanggal'])); ?></td>
         <td><?php echo h($p['pemohon_nama']); ?></td>
-        <td><?php echo h(ucfirst(Permohonan::LABEL_JENIS[$p['jenis']])); ?><br><span class="note tnum"><?php echo h(substr($p['jam_mulai'], 0, 5) . ($p['jam_kembali'] ? '–' . substr($p['jam_kembali'], 0, 5) : '')); ?></span></td>
+        <td><?php echo h(ucfirst(Permohonan::LABEL_JENIS[$p['jenis']])); ?><br><span class="redup tnum"><?php echo h(substr($p['jam_mulai'], 0, 5) . ($p['jam_kembali'] ? '–' . substr($p['jam_kembali'], 0, 5) : '')); ?></span></td>
         <td><?php echo h($p['pemberi_eksternal'] ?: $p['pemberi']); ?></td>
         <td><?php echo h(Permohonan::LABEL_STATUS[$p['status']]); ?></td>
         <td><?php echo h($p['nomor']); ?></td>

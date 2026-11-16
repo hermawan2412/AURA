@@ -46,7 +46,7 @@ require __DIR__ . '/../views/layout_atas.php';
   <ul style="list-style:none; padding:0; margin:0 0 12px;">
     <?php foreach ($notifikasi as $n): ?>
       <li style="padding:6px 0;"><a href="detail.php?id=<?php echo (int) $n['permohonan_id']; ?>"><?php echo h($n['pesan']); ?></a>
-        <span class="note"> · <?php echo h(waktuKantor($n['dibuat_at'], $peng['zona_waktu'])); ?></span></li>
+        <span class="redup"> · <?php echo h(waktuKantor($n['dibuat_at'], $peng['zona_waktu'])); ?></span></li>
     <?php endforeach; ?>
   </ul>
   <form method="post" action="aksi.php">
@@ -62,7 +62,7 @@ require __DIR__ . '/../views/layout_atas.php';
     <thead><tr><th>Tanggal</th><th>Jam</th><th>Jenis</th><th>Status</th><th></th></tr></thead>
     <tbody>
     <?php if (!$milikSaya): ?>
-      <tr><td colspan="5" class="note">Belum ada permohonan izin.</td></tr>
+      <tr><td colspan="5" class="redup">Belum ada permohonan izin.</td></tr>
     <?php endif; ?>
     <?php foreach ($milikSaya as $p): ?>
       <tr>

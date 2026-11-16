@@ -71,6 +71,7 @@ foreach (JenisSuratRepository::semua(true) as $js) {
         <a class="nav-item <?php echo $halamanAktif === 'izin_tugas' ? 'active' : ''; ?>" href="<?php echo isset($rootAsset) ? $rootAsset : ''; ?>izin/tugas.php">Tugas Izin <span class="badge badge-segera"><?php echo $izinTugas; ?></span></a>
         <?php endif; ?>
       </div>
+      <?php if ($menuSurat): ?>
       <div class="nav-group">
         <span class="nav-label">Buat Surat</span>
         <?php foreach ($menuSurat as $m): ?>
@@ -80,6 +81,7 @@ foreach (JenisSuratRepository::semua(true) as $js) {
         </a>
         <?php endforeach; ?>
       </div>
+      <?php endif; ?>
       <?php if (Auth::isPengelolaAtauAdmin()): ?>
       <div class="nav-group">
         <span class="nav-label">Kelola</span>

@@ -69,7 +69,7 @@ require __DIR__ . '/../views/layout_atas.php';
 
 <div class="form-card" style="max-width:560px;">
   <?php if ($pem): ?>
-    <p class="note" style="margin-bottom:12px;"><b><?php echo h($pem['nama']); ?></b> · NIP <?php echo h($pem['nip']); ?><br><?php echo h($pem['jabatan']); ?></p>
+    <p class="redup" style="margin-bottom:12px;"><b><?php echo h($pem['nama']); ?></b> · NIP <?php echo h($pem['nip']); ?><br><?php echo h($pem['jabatan']); ?></p>
   <?php endif; ?>
 
   <?php if (isset($rute['error'])): ?>
@@ -93,7 +93,7 @@ require __DIR__ . '/../views/layout_atas.php';
 
     <div class="field">
       <label><input type="checkbox" name="mulai_sekarang" value="1" id="mulai-sekarang" <?php echo $isian['mulai_sekarang'] === '1' ? 'checked' : ''; ?>> Mulai sekarang</label>
-      <p class="note">Jam mulai dicatat saat permohonan dikirim.</p>
+      <p class="redup">Jam mulai dicatat saat permohonan dikirim.</p>
     </div>
 
     <div class="grid-2" id="blok-waktu-manual">
@@ -115,7 +115,7 @@ require __DIR__ . '/../views/layout_atas.php';
     <div class="field">
       <label for="alasan">Keperluan <span class="req">*</span></label>
       <textarea id="alasan" name="alasan" rows="3" minlength="10" maxlength="2000" required><?php echo h($isian['alasan']); ?></textarea>
-      <p class="note">Hanya terlihat oleh Anda, pejabat terkait, dan admin. Tidak dikirim lewat WhatsApp.</p>
+      <p class="redup">Hanya terlihat oleh Anda, pejabat terkait, dan admin. Tidak dikirim lewat WhatsApp.</p>
     </div>
 
     <button type="submit" class="btn btn-primary btn-block" <?php echo $bisaKirim ? '' : 'disabled'; ?>>Kirim permohonan</button>

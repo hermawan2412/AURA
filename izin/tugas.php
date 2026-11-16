@@ -23,11 +23,11 @@ require __DIR__ . '/../views/layout_atas.php';
     <thead><tr><th>Pemohon</th><th>Tanggal</th><th>Jam</th><th>Jenis</th><th></th></tr></thead>
     <tbody>
     <?php if (!$tugas): ?>
-      <tr><td colspan="5" class="note">Tidak ada permohonan yang menunggu keputusan Anda.</td></tr>
+      <tr><td colspan="5" class="redup">Tidak ada permohonan yang menunggu keputusan Anda.</td></tr>
     <?php endif; ?>
     <?php foreach ($tugas as $p): ?>
       <tr>
-        <td><?php echo h($p['pemohon_nama']); ?><br><span class="note"><?php echo h($p['pemohon_jabatan']); ?></span></td>
+        <td><?php echo h($p['pemohon_nama']); ?><br><span class="redup"><?php echo h($p['pemohon_jabatan']); ?></span></td>
         <td><?php echo h(tanggalIzin($p)); ?></td>
         <td class="tnum"><?php echo h(jamIzin($p)); ?></td>
         <td><?php echo h(ucfirst(Permohonan::LABEL_JENIS[$p['jenis']])); ?></td>

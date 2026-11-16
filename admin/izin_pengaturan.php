@@ -209,13 +209,13 @@ unset($_SESSION['izin_kilat']);
       <div class="field"><label for="zona">Zona waktu kantor</label>
         <input id="zona" name="zona_waktu" value="<?php echo h($peng['zona_waktu']); ?>"></div>
     </div>
-    <p class="note">Mode aktif/pemeliharaan menutup pembuatan surat izin lewat menu surat lama.</p>
+    <p class="redup">Mode aktif/pemeliharaan menutup pembuatan surat izin lewat menu surat lama.</p>
     <div class="field"><label><input type="checkbox" name="wa_aktif" value="1" <?php echo $peng['wa_aktif'] ? 'checked' : ''; ?>> Kirim WhatsApp (Fonnte)</label></div>
     <div class="field"><label for="wa_token">Token Fonnte <?php echo $peng['wa_token'] ? '(tersimpan — kosongkan bila tidak diganti)' : ''; ?></label>
       <input id="wa_token" name="wa_token" type="password" autocomplete="off"></div>
     <div class="field"><label><input type="checkbox" name="izin_lisan_aktif" value="1" <?php echo $peng['izin_lisan_aktif'] ? 'checked' : ''; ?>> Izin darurat/lisan (belum dipakai di v1)</label></div>
     <div class="field"><label><input type="checkbox" name="token_portal_baru" value="1"> Buat token portal baru</label>
-      <p class="note">Token portal: <?php echo $peng['token_portal'] ? '<code>' . h($peng['token_portal']) . '</code> — salin ke konfigurasi portal' : 'belum ada'; ?></p></div>
+      <p class="redup">Token portal: <?php echo $peng['token_portal'] ? '<code>' . h($peng['token_portal']) . '</code> — salin ke konfigurasi portal' : 'belum ada'; ?></p></div>
     <button class="btn btn-primary" type="submit">Simpan</button>
   </form>
 </div>
@@ -267,7 +267,7 @@ unset($_SESSION['izin_kilat']);
 
 <div class="form-card" id="jadwal" style="max-width:640px; margin-top:20px;">
   <h2 style="font-family:var(--display); font-size:1rem; margin-bottom:12px;">Jam kerja</h2>
-  <p class="note" style="margin-bottom:10px;">Kosongkan kedua jam untuk hari libur. Pastikan sesuai jam kerja resmi sebelum modul diaktifkan.</p>
+  <p class="redup" style="margin-bottom:10px;">Kosongkan kedua jam untuk hari libur. Pastikan sesuai jam kerja resmi sebelum modul diaktifkan.</p>
   <form method="post">
     <?php echo Csrf::field(); ?><input type="hidden" name="bagian" value="jadwal">
     <?php foreach ($HARI as $n => $label): ?>
@@ -297,7 +297,7 @@ unset($_SESSION['izin_kilat']);
 
 <div class="form-card" id="pemetaan" style="max-width:980px; margin-top:20px;">
   <h2 style="font-family:var(--display); font-size:1rem; margin-bottom:12px;">Kelompok pegawai</h2>
-  <p class="note" style="margin-bottom:10px;">Menentukan rute persetujuan. <?php echo $tanpaPemetaan ? $tanpaPemetaan . ' pegawai berakun belum dipetakan dan belum bisa mengajukan izin.' : 'Semua pegawai berakun sudah dipetakan.'; ?></p>
+  <p class="redup" style="margin-bottom:10px;">Menentukan rute persetujuan. <?php echo $tanpaPemetaan ? $tanpaPemetaan . ' pegawai berakun belum dipetakan dan belum bisa mengajukan izin.' : 'Semua pegawai berakun sudah dipetakan.'; ?></p>
   <form method="post">
     <?php echo Csrf::field(); ?><input type="hidden" name="bagian" value="pemetaan">
     <div class="table-wrap">
@@ -308,8 +308,8 @@ unset($_SESSION['izin_kilat']);
           <tr>
             <td><?php echo h(Formatter::namaBergelar($p)); ?></td>
             <td><?php echo h($p['jabatan']); ?></td>
-            <td><?php echo $p['user_id'] ? 'Ada' : '<span class="note">Tidak ada</span>'; ?></td>
-            <td><?php echo $p['no_telp'] ? 'Ada' : '<span class="note">Kosong</span>'; ?></td>
+            <td><?php echo $p['user_id'] ? 'Ada' : '<span class="redup">Tidak ada</span>'; ?></td>
+            <td><?php echo $p['no_telp'] ? 'Ada' : '<span class="redup">Kosong</span>'; ?></td>
             <td><select name="kelompok[<?php echo (int) $p['id']; ?>]" aria-label="Kelompok <?php echo h($p['nama_lengkap']); ?>">
               <option value="">— belum —</option>
               <?php foreach (Routing::KELOMPOK as $k): ?><option value="<?php echo $k; ?>" <?php echo $p['kelompok'] === $k ? 'selected' : ''; ?>><?php echo h(ucfirst($k)); ?></option><?php endforeach; ?>

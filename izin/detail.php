@@ -82,17 +82,17 @@ function isianAlasan($nama, $label, $wajib)
 <div class="grid-2" style="max-width:980px; align-items:start;">
   <div class="form-card">
     <p style="margin-bottom:8px;"><?php echo badgeIzin($p['status']); ?></p>
-    <p><b><?php echo h($p['pemohon_nama']); ?></b><br><span class="note"><?php echo h($p['pemohon_jabatan']); ?></span></p>
+    <p><b><?php echo h($p['pemohon_nama']); ?></b><br><span class="redup"><?php echo h($p['pemohon_jabatan']); ?></span></p>
     <p style="margin-top:10px;"><?php echo h(tanggalIzin($p)); ?>, <span class="tnum"><?php echo h(jamIzin($p)); ?></span></p>
-    <p style="margin-top:10px;"><span class="note">Keperluan</span><br><?php echo nl2br(h($p['alasan'])); ?></p>
+    <p style="margin-top:10px;"><span class="redup">Keperluan</span><br><?php echo nl2br(h($p['alasan'])); ?></p>
     <?php if ($p['catatan_keputusan']): ?>
-      <p style="margin-top:10px;"><span class="note">Catatan keputusan</span><br><?php echo nl2br(h($p['catatan_keputusan'])); ?></p>
+      <p style="margin-top:10px;"><span class="redup">Catatan keputusan</span><br><?php echo nl2br(h($p['catatan_keputusan'])); ?></p>
     <?php endif; ?>
     <?php if ($p['mengetahui_nama']): ?>
-      <p class="note" style="margin-top:10px;">Mengetahui (pemberitahuan): <?php echo h($p['mengetahui_nama']); ?></p>
+      <p class="redup" style="margin-top:10px;">Mengetahui (pemberitahuan): <?php echo h($p['mengetahui_nama']); ?></p>
     <?php endif; ?>
     <?php if ($p['pemberi_eksternal']): ?>
-      <p class="note" style="margin-top:10px;">Pemberi izin: <?php echo h($p['pemberi_eksternal']); ?> (di luar AURA). Hasil dicatat oleh pemohon.</p>
+      <p class="redup" style="margin-top:10px;">Pemberi izin: <?php echo h($p['pemberi_eksternal']); ?> (di luar AURA). Hasil dicatat oleh pemohon.</p>
     <?php endif; ?>
 
     <?php if ($bolehPutus): ?>
@@ -119,7 +119,7 @@ function isianAlasan($nama, $label, $wajib)
     <?php endif; ?>
     <?php if ($bolehAlih): ?>
       <details style="margin-top:12px;"><summary>Alihkan ke pejabat pengganti (admin)</summary>
-        <p class="note">Rute dihitung ulang dari data pejabat & berhalangan saat ini.</p>
+        <p class="redup">Rute dihitung ulang dari data pejabat & berhalangan saat ini.</p>
         <?php formAksi('alihkan', $p, 'Alihkan', 'btn-secondary', isianAlasan('alasan-alih', 'Alasan pengalihan', true)); ?>
       </details>
     <?php endif; ?>
@@ -132,14 +132,14 @@ function isianAlasan($nama, $label, $wajib)
     <div class="form-card">
       <h2 style="font-family:var(--display); font-size:1rem; margin-bottom:10px;">Surat</h2>
       <?php if (!$dok): ?>
-        <p class="note"><?php echo $p['status'] === 'disetujui' ? 'Izin disetujui, surat sedang disiapkan.' : 'Surat tersedia setelah izin disetujui.'; ?></p>
+        <p class="redup"><?php echo $p['status'] === 'disetujui' ? 'Izin disetujui, surat sedang disiapkan.' : 'Surat tersedia setelah izin disetujui.'; ?></p>
       <?php elseif ($dok['status'] === 'siap'): ?>
         <p>Nomor register <?php echo h($dok['nomor']); ?></p>
         <a class="btn btn-primary" style="margin-top:8px;" href="unduh.php?id=<?php echo $id; ?>">Unduh PDF</a>
       <?php else: ?>
-        <p class="note">Izin <?php echo h(strtolower(Permohonan::LABEL_STATUS[$p['status']])); ?>, surat <?php echo $dok['status'] === 'gagal' ? 'gagal dibuat' : 'sedang disiapkan'; ?>.</p>
+        <p class="redup">Izin <?php echo h(strtolower(Permohonan::LABEL_STATUS[$p['status']])); ?>, surat <?php echo $dok['status'] === 'gagal' ? 'gagal dibuat' : 'sedang disiapkan'; ?>.</p>
         <?php if ($isAdmin): ?>
-          <?php if ($dok['error']): ?><p class="note"><?php echo h($dok['error']); ?></p><?php endif; ?>
+          <?php if ($dok['error']): ?><p class="redup"><?php echo h($dok['error']); ?></p><?php endif; ?>
           <?php formAksi('buat_ulang_surat', $p, 'Buat ulang surat', 'btn-secondary'); ?>
         <?php endif; ?>
       <?php endif; ?>
@@ -150,9 +150,9 @@ function isianAlasan($nama, $label, $wajib)
       <ul style="list-style:none; padding:0; margin:0;">
         <?php foreach ($riwayat as $r): ?>
           <li style="padding:5px 0; border-bottom:1px solid var(--border);">
-            <span class="note"><?php echo h(waktuKantor($r['dibuat_at'], $p['zona_waktu'])); ?></span><br>
+            <span class="redup"><?php echo h(waktuKantor($r['dibuat_at'], $p['zona_waktu'])); ?></span><br>
             <?php echo h($r['aktor_nama']); ?> — <?php echo h(str_replace('_', ' ', $r['aksi'])); ?>
-            <?php if ($r['alasan']): ?><br><span class="note"><?php echo h($r['alasan']); ?></span><?php endif; ?>
+            <?php if ($r['alasan']): ?><br><span class="redup"><?php echo h($r['alasan']); ?></span><?php endif; ?>
           </li>
         <?php endforeach; ?>
         <?php if ($aktif): ?>
@@ -167,10 +167,10 @@ function isianAlasan($nama, $label, $wajib)
       <ul style="list-style:none; padding:0; margin:0;">
         <?php $labelWa = array('antre' => 'dalam antrean', 'terkirim' => 'diterima Fonnte', 'gagal' => 'gagal', 'dibatalkan' => 'dibatalkan (tidak relevan lagi)'); ?>
         <?php foreach ($wa as $w): ?>
-          <li class="note" style="padding:3px 0;"><?php echo h($w['nama_tampilan']); ?>: <?php echo h($labelWa[$w['status']]); ?><?php echo $w['status'] === 'gagal' && $w['error'] ? ' — ' . h($w['error']) : ''; ?></li>
+          <li class="redup" style="padding:3px 0;"><?php echo h($w['nama_tampilan']); ?>: <?php echo h($labelWa[$w['status']]); ?><?php echo $w['status'] === 'gagal' && $w['error'] ? ' — ' . h($w['error']) : ''; ?></li>
         <?php endforeach; ?>
       </ul>
-      <p class="note" style="margin-top:8px;">Bila WA gagal atau mendesak, hubungi pejabat langsung. Keputusan tetap dicatat di AURA.</p>
+      <p class="redup" style="margin-top:8px;">Bila WA gagal atau mendesak, hubungi pejabat langsung. Keputusan tetap dicatat di AURA.</p>
     </div>
     <?php endif; ?>
   </div>
