@@ -81,7 +81,7 @@ $rows = $restu->query(
 
 $cekAda = $aura->prepare('SELECT id, nama_lengkap, jabatan, golongan_ruang, tmt, no_telp FROM pegawai WHERE nip = ?');
 $update = $aura->prepare(
-    'UPDATE pegawai SET nama_lengkap = ?, jabatan = ?, golongan_ruang = ?, tmt = COALESCE(tmt, ?), no_telp = ?, updated_at = NOW()
+    'UPDATE pegawai SET nama_lengkap = ?, jabatan = ?, golongan_ruang = ?, tmt = COALESCE(tmt, ?), no_telp = COALESCE(?, no_telp), updated_at = NOW()
      WHERE nip = ?'
 );
 $insert = $aura->prepare(
@@ -109,7 +109,7 @@ foreach ($rows as $r) {
                 || $existing['jabatan'] !== $r['nama_jabatan']
                 || $existing['golongan_ruang'] !== $r['nama_golongan']
                 || ($existing['tmt'] === null && $r['tmt_pegawai'] !== null)
-                || $existing['no_telp'] !== $noTelp;
+                || ($noTelp !== null && $existing['no_telp'] !== $noTelp); // kosong di RESTU = pertahankan nomor manual AURA
             if ($dryRun) {
                 if ($berubah) {
                     echo "  [update] {$r['nip']} {$r['nama_pegawai']}\n";

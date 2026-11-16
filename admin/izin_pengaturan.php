@@ -8,6 +8,7 @@ use Aurat\Database;
 use Aurat\Formatter;
 use Aurat\Izin\Permohonan;
 use Aurat\Izin\Routing;
+use Aurat\Izin\Wa;
 use Aurat\Izin\Waktu;
 
 Auth::requireAdmin();
@@ -114,7 +115,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                     $ubah[$pid] = $kel;
                 }
-                Permohonan::auditKonfigurasi($db, $userId, 'ubah_pemetaan', $ubah, $kini);
+                // Nomor WA: diisi manual di sini; sinkron RESTU hanya menimpa bila nomor di RESTU terisi.
+                $nomorBerubah = array();
+                foreach ((array) (isset($_POST['no_telp']) ? $_POST['no_telp'] : array()) as $pid => $no) {
+                    $no = trim((string) $no);
+                    if ($no !== '' && Wa::formatNomor($no) === null) {
+                        throw new RuntimeException('Nomor WA "' . $no . '" tidak valid. Contoh: 081234567890.');
+                    }
+                    $s = $db->prepare('UPDATE pegawai SET no_telp = ? WHERE id = ? AND NOT (no_telp <=> ?)');
+                    $s->execute(array($no !== '' ? $no : null, (int) $pid, $no !== '' ? $no : null));
+                    if ($s->rowCount()) {
+                        $nomorBerubah[] = (int) $pid; // nomornya sendiri tidak dicatat di audit
+                    }
+                }
+                Permohonan::auditKonfigurasi($db, $userId, 'ubah_pemetaan', array('kelompok' => $ubah, 'nomor_wa_diubah' => $nomorBerubah), $kini);
                 break;
 
             case 'berhalangan_tambah':
@@ -316,7 +330,7 @@ $LABEL_MODE = array('nonaktif' => 'Nonaktif — jalur surat lama', 'aktif' => 'A
 
       <section class="iz-bagian" id="pemetaan" aria-labelledby="h-pemetaan">
         <h2 id="h-pemetaan">Kelompok pegawai</h2>
-        <p>Menentukan rute persetujuan. <?php echo $tanpaPemetaan ? '<b>' . $tanpaPemetaan . ' pegawai berakun belum dipetakan</b> dan belum bisa mengajukan izin.' : 'Semua pegawai berakun sudah dipetakan.'; ?></p>
+        <p>Kelompok menentukan rute persetujuan. Nomor WA dipakai untuk pemberitahuan; nomor yang terisi di RESTU akan menimpa nomor di sini setiap malam. <?php echo $tanpaPemetaan ? '<b>' . $tanpaPemetaan . ' pegawai berakun belum dipetakan</b> dan belum bisa mengajukan izin.' : 'Semua pegawai berakun sudah dipetakan.'; ?></p>
         <form method="post">
           <?php echo Csrf::field(); ?><input type="hidden" name="bagian" value="pemetaan">
           <div class="iz-gulir" style="border:1px solid var(--border); border-radius:var(--r-md);">
@@ -327,7 +341,7 @@ $LABEL_MODE = array('nonaktif' => 'Nonaktif — jalur surat lama', 'aktif' => 'A
                 <tr style="--i:<?php echo $i; ?>">
                   <td><?php echo h(Formatter::namaBergelar($p)); ?><br><span class="redup"><?php echo h($p['jabatan']); ?></span></td>
                   <td><?php echo $p['user_id'] ? 'Ada' : '<span class="redup">Tidak ada</span>'; ?></td>
-                  <td><?php echo $p['no_telp'] ? 'Ada' : '<span class="redup">Kosong</span>'; ?></td>
+                  <td><div class="field" style="margin:0;"><input type="tel" inputmode="tel" name="no_telp[<?php echo (int) $p['id']; ?>]" value="<?php echo h($p['no_telp']); ?>" placeholder="08…" aria-label="Nomor WA <?php echo h($p['nama_lengkap']); ?>" style="min-width:150px;"></div></td>
                   <td><div class="field" style="margin:0;"><select name="kelompok[<?php echo (int) $p['id']; ?>]" aria-label="Kelompok <?php echo h($p['nama_lengkap']); ?>">
                     <option value="">— belum —</option>
                     <?php foreach (Routing::KELOMPOK as $k): ?><option value="<?php echo $k; ?>" <?php echo $p['kelompok'] === $k ? 'selected' : ''; ?>><?php echo h(ucfirst($k)); ?></option><?php endforeach; ?>
