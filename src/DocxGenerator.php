@@ -46,7 +46,8 @@ class DocxGenerator
      */
     public static function generate($templateRelPath, array $nilai, array $tabel, array $gambar = array(), array $hapusBarisJika = array())
     {
-        $templatePath = __DIR__ . '/../' . $templateRelPath;
+        // Path absolut (mis. salinan template beku di arsip izin, di luar folder aplikasi) dipakai apa adanya.
+        $templatePath = $templateRelPath !== '' && $templateRelPath[0] === '/' ? $templateRelPath : __DIR__ . '/../' . $templateRelPath;
 
         if (!is_file($templatePath)) {
             throw new RuntimeException(

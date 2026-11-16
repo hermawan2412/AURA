@@ -9,7 +9,7 @@
 // BUKAN kredensial aura_app biasa, prinsip least-privilege: kalau aplikasi
 // web AURA kena, itu gak otomatis bawa akses baca RESTU).
 //
-// Field yang disinkron CUMA nama_lengkap/jabatan/golongan_ruang/tmt
+// Field yang disinkron CUMA nama_lengkap/jabatan/golongan_ruang/tmt (+ no_telp sejak db/037, utk WA modul izin)
 // (dikonfirmasi user via AskUserQuestion) - field lain (pangkat, gelar_depan,
 // gelar_belakang, unit_kerja, status_aktif) SENGAJA GAK disentuh:
 // - pangkat/gelar: RESTU gak punya kolom ini sama sekali (kalau disentuh,
@@ -73,20 +73,20 @@ try {
 $aura = Database::pdo();
 
 $rows = $restu->query(
-    'SELECT p.nip, p.nama_pegawai, j.nama_jabatan, g.nama_golongan, p.tmt_pegawai
+    'SELECT p.nip, p.nama_pegawai, j.nama_jabatan, g.nama_golongan, p.tmt_pegawai, p.no_telp
      FROM pegawai p
      JOIN jabatan j ON j.id_jabatan = p.id_jabatan
      JOIN golongan g ON g.id_golongan = p.id_golongan'
 )->fetchAll();
 
-$cekAda = $aura->prepare('SELECT id, nama_lengkap, jabatan, golongan_ruang, tmt FROM pegawai WHERE nip = ?');
+$cekAda = $aura->prepare('SELECT id, nama_lengkap, jabatan, golongan_ruang, tmt, no_telp FROM pegawai WHERE nip = ?');
 $update = $aura->prepare(
-    'UPDATE pegawai SET nama_lengkap = ?, jabatan = ?, golongan_ruang = ?, tmt = COALESCE(tmt, ?), updated_at = NOW()
+    'UPDATE pegawai SET nama_lengkap = ?, jabatan = ?, golongan_ruang = ?, tmt = COALESCE(tmt, ?), no_telp = ?, updated_at = NOW()
      WHERE nip = ?'
 );
 $insert = $aura->prepare(
-    "INSERT INTO pegawai (nip, nama_lengkap, jabatan, golongan_ruang, unit_kerja, tmt, status_aktif)
-     VALUES (?, ?, ?, ?, 'Pengadilan Agama Rantau', ?, 1)"
+    "INSERT INTO pegawai (nip, nama_lengkap, jabatan, golongan_ruang, unit_kerja, tmt, no_telp, status_aktif)
+     VALUES (?, ?, ?, ?, 'Pengadilan Agama Rantau', ?, ?, 1)"
 );
 
 // --dry-run: preview doang (SELECT-only terhadap AURA juga), gak ada
@@ -99,6 +99,8 @@ $dibuat = 0;
 $gagal = 0;
 
 foreach ($rows as $r) {
+    // Nomor WA utk notifikasi modul izin (db/037). RESTU pakai '' utk kosong.
+    $noTelp = trim((string) $r['no_telp']) !== '' ? trim((string) $r['no_telp']) : null;
     try {
         $cekAda->execute(array($r['nip']));
         $existing = $cekAda->fetch();
@@ -106,13 +108,14 @@ foreach ($rows as $r) {
             $berubah = $existing['nama_lengkap'] !== $r['nama_pegawai']
                 || $existing['jabatan'] !== $r['nama_jabatan']
                 || $existing['golongan_ruang'] !== $r['nama_golongan']
-                || ($existing['tmt'] === null && $r['tmt_pegawai'] !== null);
+                || ($existing['tmt'] === null && $r['tmt_pegawai'] !== null)
+                || $existing['no_telp'] !== $noTelp;
             if ($dryRun) {
                 if ($berubah) {
                     echo "  [update] {$r['nip']} {$r['nama_pegawai']}\n";
                 }
             } else {
-                $update->execute(array($r['nama_pegawai'], $r['nama_jabatan'], $r['nama_golongan'], $r['tmt_pegawai'], $r['nip']));
+                $update->execute(array($r['nama_pegawai'], $r['nama_jabatan'], $r['nama_golongan'], $r['tmt_pegawai'], $noTelp, $r['nip']));
             }
             if ($berubah) {
                 $diupdate++;
@@ -121,7 +124,7 @@ foreach ($rows as $r) {
             if ($dryRun) {
                 echo "  [baru] {$r['nip']} {$r['nama_pegawai']}\n";
             } else {
-                $insert->execute(array($r['nip'], $r['nama_pegawai'], $r['nama_jabatan'], $r['nama_golongan'], $r['tmt_pegawai']));
+                $insert->execute(array($r['nip'], $r['nama_pegawai'], $r['nama_jabatan'], $r['nama_golongan'], $r['tmt_pegawai'], $noTelp));
             }
             $dibuat++;
         }

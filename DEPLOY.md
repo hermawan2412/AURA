@@ -158,3 +158,18 @@ Keenam jenis surat bawaan sudah dimigrasikan penuh ke mesin template/variabel ge
 - Backup rutin **seluruh database** `aurat` (bukan cuma `pegawai`/`user_login` — sejak mesin template/variabel generic, tabel `jenis_surat`, `variabel_surat`, `template_surat`, `blok_tabel_surat*` juga sumber data satu-satunya) **dan** folder `templates/uploaded/` (berkas `.docx` yang diunggah admin lewat menu Kelola Jenis Surat, dirujuk dari `template_surat.nama_berkas` — backup DB saja tidak cukup tanpa berkas fisiknya).
 - Akses aplikasi ini harus **selamanya LAN-only** — jangan forward port ini ke internet.
 - Dokumen hasil generate tidak disimpan di server (streaming langsung ke unduhan) — tidak perlu rutinitas bersih-bersih berkas.
+
+## Modul pengajuan izin (db/037)
+
+Rancangan: `web-parantau/docs/superpowers/specs/2026-11-16-aura-pengajuan-izin-design.md`, rencana: `docs/rencana-izin-v1.md`.
+
+1. Backup DB `aura` + `templates/uploaded/` dulu, uji restore.
+2. `mysql aura < db/037_izin_modul.sql` (aditif, idempoten; modul mulai `nonaktif`, jalur surat lama tetap jalan).
+3. `config/config.php`: tambah `url_aplikasi` dan `direktori_arsip_izin` (lihat `config.example.php`); buat direktorinya milik user aplikasi, 0700, di luar `/var/www/aura`.
+4. `soffice` harus bisa dijalankan user aplikasi (`AURA_SOFFICE` untuk path lain).
+5. Nginx: whitelist PHP baru `izin/{index,form,detail,tugas,aksi,unduh}.php`, `admin/izin_{pengaturan,register}.php`, `api/izin_hari_ini.php`. JANGAN buka `izin/_umum.php`, `cron/`, `storage/`, `_arsip_pra_migrasi/` (berisi generator surat lama yang tidak ikut dijaga penutupan jalur izin).
+6. Cron tiap menit (user aplikasi): `* * * * * php /var/www/aura/cron/izin_wa.php`.
+7. Cron sinkron RESTU kini ikut membawa `no_telp` (grant SELECT tabel `restu.pegawai` yang ada sudah cukup).
+8. Admin > Pengaturan Izin: isi pejabat, kelompok pegawai, jam kerja resmi, token Fonnte, token portal; baru set mode `aktif`.
+9. Portal lokal: salin `izin.php` + `izin_config.php` (dari `izin_config.contoh.php`, isi token portal) + `index.html`.
+10. Rollback: set mode `pemeliharaan` (baca saja, jalur lama tetap tertutup). Jangan drop tabel `izin_*`.

@@ -378,6 +378,24 @@ if (!Auth::bolehAksesJenisSurat($kode)) {
     exit('Akses ditolak — peran Anda tidak diizinkan membuat jenis surat ini.');
 }
 
+// Modul izin (db/037) aktif/pemeliharaan: surat izin hanya boleh lahir dari
+// proses persetujuan di izin/. GET diarahkan, POST ditolak untuk SEMUA peran.
+if ($kode === 'izin_keluar_kantor') {
+    try {
+        $modeIzin = (string) Database::pdo()->query('SELECT mode FROM izin_pengaturan WHERE id = 1')->fetchColumn();
+    } catch (\PDOException $e) {
+        $modeIzin = 'nonaktif'; // migrasi 037 belum jalan
+    }
+    if ($modeIzin !== '' && $modeIzin !== 'nonaktif') {
+        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+            http_response_code(403);
+            exit('Surat izin keluar kini dibuat melalui menu Izin Keluar (perlu persetujuan pejabat).');
+        }
+        header('Location: ../izin/index.php');
+        exit;
+    }
+}
+
 $metode = $_SERVER['REQUEST_METHOD'];
 if ($metode === 'POST') {
     Csrf::verify();

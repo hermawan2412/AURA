@@ -15,6 +15,13 @@ return array(
     'max_percobaan_gagal' => 5,
     'lama_kunci_menit'    => 15,
 
+    // Modul izin (db/037).
+    // Alamat publik AURA, dipakai tautan di pesan WhatsApp (mis. https://aura.pa-rantau.go.id/).
+    'url_aplikasi' => 'https://aura.pa-rantau.go.id/',
+    // Arsip PDF surat izin + salinan template beku. WAJIB di luar web root
+    // (web root AURA = root repo). Milik user aplikasi, mode 0700.
+    'direktori_arsip_izin' => '/var/lib/aura/izin',
+
     // Opsional - cuma dibutuhkan cron/sync_pegawai_dari_restu.php (sync
     // harian data pegawai dari app RESTU). User MySQL 'aura_restu_reader'
     // (bukan aura_app) - SELECT-only ke restu.pegawai/jabatan/golongan,

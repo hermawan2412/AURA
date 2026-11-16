@@ -68,6 +68,16 @@ class Auth
         }
     }
 
+    /**
+     * Tujuan redirect setelah login: HANYA halaman modul izin (relatif, tanpa
+     * skema/host), supaya ?lanjut= tidak bisa dipakai sebagai open redirect.
+     */
+    public static function lanjutAman($lanjut)
+    {
+        $lanjut = (string) $lanjut;
+        return preg_match('#^izin/[a-z_]+\.php(\?id=\d+)?$#', $lanjut) === 1 ? $lanjut : null;
+    }
+
     public static function logout()
     {
         $_SESSION = array();
@@ -86,6 +96,19 @@ class Auth
     public static function requireLogin()
     {
         if (!self::check()) {
+            // Tautan WA modul izin -> kembali ke halaman yang dituju setelah login.
+            $basis = self::pathBasis();
+            $uri = isset($_SERVER['REQUEST_URI']) ? (string) $_SERVER['REQUEST_URI'] : '';
+            $lanjut = $basis !== '' && strpos($uri, $basis) === 0 ? substr($uri, strlen($basis)) : '';
+            $query = self::lanjutAman($lanjut) !== null ? '?lanjut=' . rawurlencode($lanjut) : '';
+            header('Location: ' . $basis . 'login.php' . $query);
+            exit;
+        }
+        // Akun yang dinonaktifkan kehilangan akses walau sesinya masih ada.
+        $stmt = Database::pdo()->prepare('SELECT status_aktif FROM user_login WHERE id = ?');
+        $stmt->execute(array($_SESSION['user_id']));
+        if ((int) $stmt->fetchColumn() !== 1) {
+            self::logout();
             header('Location: ' . self::pathBasis() . 'login.php');
             exit;
         }

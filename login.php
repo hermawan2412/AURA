@@ -6,8 +6,10 @@ use Aurat\Auth;
 use Aurat\Csrf;
 use Aurat\Pengaturan;
 
+$lanjut = Auth::lanjutAman(isset($_REQUEST['lanjut']) ? $_REQUEST['lanjut'] : '');
+
 if (Auth::check()) {
-    header('Location: index.php');
+    header('Location: ' . ($lanjut !== null ? $lanjut : 'index.php'));
     exit;
 }
 
@@ -24,7 +26,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $hasil = Auth::login($username, $password);
         if ($hasil['success']) {
-            header('Location: index.php');
+            header('Location: ' . ($lanjut !== null ? $lanjut : 'index.php'));
             exit;
         }
         $pesanError = $hasil['message'];
@@ -52,6 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <?php endif; ?>
 
     <?php echo Csrf::field(); ?>
+    <?php if ($lanjut !== null): ?><input type="hidden" name="lanjut" value="<?php echo htmlspecialchars($lanjut); ?>"><?php endif; ?>
     <div class="field">
       <label for="username">Nama pengguna</label>
       <input id="username" name="username" type="text" autocomplete="username" required autofocus>

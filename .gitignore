@@ -13,3 +13,6 @@ templates/uploaded/*
 uploads/notula_foto/*
 !uploads/notula_foto/.htaccess
 !uploads/notula_foto/.gitkeep
+
+# Arsip izin lokal (dev). Produksi: config direktori_arsip_izin di LUAR web root.
+/storage/

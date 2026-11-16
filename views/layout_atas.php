@@ -8,14 +8,31 @@
  */
 use Aurat\Auth;
 use Aurat\Csrf;
+use Aurat\Database;
 use Aurat\Pengaturan;
 use Aurat\Surat\IconLibrary;
 use Aurat\Surat\JenisSuratRepository;
+
+// Modul izin (db/037): saat mode != nonaktif, menu surat izin lama diganti modul.
+$izinMode = 'nonaktif';
+$izinTugas = 0;
+try {
+    $izinMode = (string) Database::pdo()->query('SELECT mode FROM izin_pengaturan WHERE id = 1')->fetchColumn();
+    $st = Database::pdo()->prepare('SELECT COUNT(*) FROM izin_tahap WHERE pemberi_user_id = ? AND status = \'menunggu\'');
+    $st->execute(array(isset($_SESSION['user_id']) ? $_SESSION['user_id'] : 0));
+    $izinTugas = (int) $st->fetchColumn();
+} catch (\PDOException $e) {
+    // migrasi 037 belum jalan - menu lama saja
+}
+$izinTampil = $izinMode !== '' && $izinMode !== 'nonaktif';
 
 $menuSurat = array();
 foreach (JenisSuratRepository::semua(true) as $js) {
     if (!Auth::bolehAksesJenisSurat($js['kode'])) {
         continue; // peran 'pengguna' - sembunyikan jenis surat yg gak boleh diakses
+    }
+    if ($izinTampil && $js['kode'] === 'izin_keluar_kantor') {
+        continue;
     }
     $menuSurat[] = array(
         'kode'  => $js['kode'],
@@ -47,6 +64,12 @@ foreach (JenisSuratRepository::semua(true) as $js) {
       <div class="nav-group">
         <span class="nav-label">Menu</span>
         <a class="nav-item <?php echo $halamanAktif === 'dashboard' ? 'active' : ''; ?>" href="<?php echo isset($rootAsset) ? $rootAsset : ''; ?>index.php">Dasbor</a>
+        <?php if ($izinTampil): ?>
+        <a class="nav-item <?php echo $halamanAktif === 'izin' ? 'active' : ''; ?>" href="<?php echo isset($rootAsset) ? $rootAsset : ''; ?>izin/index.php">Izin Keluar</a>
+        <?php endif; ?>
+        <?php if ($izinTugas > 0): ?>
+        <a class="nav-item <?php echo $halamanAktif === 'izin_tugas' ? 'active' : ''; ?>" href="<?php echo isset($rootAsset) ? $rootAsset : ''; ?>izin/tugas.php">Tugas Izin <span class="badge badge-segera"><?php echo $izinTugas; ?></span></a>
+        <?php endif; ?>
       </div>
       <div class="nav-group">
         <span class="nav-label">Buat Surat</span>
@@ -66,6 +89,8 @@ foreach (JenisSuratRepository::semua(true) as $js) {
         <?php if (Auth::isAdmin()): ?>
         <a class="nav-item <?php echo $halamanAktif === 'admin_user_login' ? 'active' : ''; ?>" href="<?php echo isset($rootAsset) ? $rootAsset : ''; ?>admin/user_login.php">Kelola Pengguna</a>
         <a class="nav-item <?php echo $halamanAktif === 'admin_pengaturan' ? 'active' : ''; ?>" href="<?php echo isset($rootAsset) ? $rootAsset : ''; ?>admin/pengaturan.php">Pengaturan Aplikasi</a>
+        <a class="nav-item <?php echo $halamanAktif === 'admin_izin_register' ? 'active' : ''; ?>" href="<?php echo isset($rootAsset) ? $rootAsset : ''; ?>admin/izin_register.php">Register Izin</a>
+        <a class="nav-item <?php echo $halamanAktif === 'admin_izin_pengaturan' ? 'active' : ''; ?>" href="<?php echo isset($rootAsset) ? $rootAsset : ''; ?>admin/izin_pengaturan.php">Pengaturan Izin</a>
         <?php endif; ?>
       </div>
       <?php endif; ?>
