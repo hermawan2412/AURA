@@ -40,8 +40,11 @@ cek('panitera', Routing::tentukan('panitera', $p, array(), 5), array('pemberi' =
 cek('sekretaris wakil halangan', Routing::tentukan('sekretaris', $p, array(2), 6), array('pemberi' => 'ketua', 'mengetahui' => null));
 // A07b Ketua -> PTA, Wakil diberi tahu
 cek('A07b', Routing::tentukan('ketua', $p, array(), 1), array('pemberi' => 'pta', 'mengetahui' => 'wakil'));
-// A07 Ketua berhalangan untuk hakim -> error, tidak fallback
-cek('A07 ketua halangan', isset(Routing::tentukan('hakim', $p, array(1), 3)['error']), true);
+// Ketua berhalangan untuk hakim -> Wakil; Ketua & Wakil berhalangan -> error
+cek('hakim, ketua halangan -> wakil', Routing::tentukan('hakim', $p, array(1), 3), array('pemberi' => 'wakil', 'mengetahui' => null));
+cek('hakim, ketua & wakil halangan', isset(Routing::tentukan('hakim', $p, array(1, 2), 3)['error']), true);
+// Wakil sebagai pemohon saat Ketua berhalangan -> tidak menyetujui sendiri
+cek('wakil, ketua halangan', isset(Routing::tentukan('wakil', $p, array(1), 2)['error']), true);
 // Ketua kosong
 $tanpaKetua = $p;
 unset($tanpaKetua['ketua']);

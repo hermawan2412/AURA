@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS izin_pengaturan (
   PRIMARY KEY (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Jadwal default hanya contoh; WAJIB dicek admin sebelum mode 'aktif'.
+-- Jam kerja resmi (dikonfirmasi pengguna 2026-11-16): Senin-Kamis 08.00-16.30, Jumat 08.00-17.00 WITA.
 INSERT INTO izin_pengaturan (id, jadwal_kerja)
 SELECT 1, '{"1":{"mulai":"08:00","selesai":"16:30"},"2":{"mulai":"08:00","selesai":"16:30"},"3":{"mulai":"08:00","selesai":"16:30"},"4":{"mulai":"08:00","selesai":"16:30"},"5":{"mulai":"08:00","selesai":"17:00"}}'
 WHERE NOT EXISTS (SELECT 1 FROM izin_pengaturan WHERE id = 1);

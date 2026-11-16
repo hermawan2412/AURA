@@ -58,11 +58,19 @@ class Routing
                 return array('pemberi' => 'pta', 'mengetahui' => $mengetahui('wakil'));
 
             case 'hakim':
+                // Ketua berhalangan -> Wakil (keputusan pengguna 2026-11-16).
+                $pemberi = $pertamaTersedia(array('ketua', 'wakil'));
+                if ($pemberi !== null) {
+                    return array('pemberi' => $pemberi, 'mengetahui' => null);
+                }
+                return array('error' => 'Ketua dan Wakil tidak tersedia (kosong, nonaktif, atau berhalangan). Hubungi admin.');
+
             case 'wakil':
                 if ($tersedia('ketua')) {
                     return array('pemberi' => 'ketua', 'mengetahui' => null);
                 }
-                return array('error' => 'Ketua tidak tersedia (kosong, nonaktif, atau berhalangan). Aturan pengganti untuk kasus ini belum ditetapkan; hubungi Ketua langsung.');
+                // Pengganti Ketua adalah Wakil sendiri - tidak boleh menyetujui permohonannya sendiri.
+                return array('error' => 'Ketua tidak tersedia, dan Wakil tidak dapat menyetujui izinnya sendiri. Hubungi Ketua langsung.');
 
             case 'kepaniteraan':
             case 'kesekretariatan':
