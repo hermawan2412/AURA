@@ -92,6 +92,7 @@ foreach (JenisSuratRepository::semua(true) as $js) {
         <?php if (Auth::isAdmin()): ?>
         <a class="nav-item <?php echo $halamanAktif === 'admin_user_login' ? 'active' : ''; ?>" href="<?php echo isset($rootAsset) ? $rootAsset : ''; ?>admin/user_login.php">Kelola Pengguna</a>
         <a class="nav-item <?php echo $halamanAktif === 'admin_pengaturan' ? 'active' : ''; ?>" href="<?php echo isset($rootAsset) ? $rootAsset : ''; ?>admin/pengaturan.php">Pengaturan Aplikasi</a>
+        <a class="nav-item <?php echo $halamanAktif === 'admin_izin_dasbor' ? 'active' : ''; ?>" href="<?php echo isset($rootAsset) ? $rootAsset : ''; ?>admin/izin_dasbor.php">Dasbor Izin</a>
         <a class="nav-item <?php echo $halamanAktif === 'admin_izin_register' ? 'active' : ''; ?>" href="<?php echo isset($rootAsset) ? $rootAsset : ''; ?>admin/izin_register.php">Register Izin</a>
         <a class="nav-item <?php echo $halamanAktif === 'admin_izin_pengaturan' ? 'active' : ''; ?>" href="<?php echo isset($rootAsset) ? $rootAsset : ''; ?>admin/izin_pengaturan.php">Pengaturan Izin</a>
         <?php endif; ?>

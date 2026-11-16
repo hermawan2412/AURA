@@ -60,4 +60,23 @@
     window.addEventListener('beforeunload', function (e) { if (kotor) { e.preventDefault(); e.returnValue = ''; } });
     atur();
   }
+
+  // Tooltip grafik dasbor: hover/fokus kolom batang -> tampilkan data-tip di atasnya.
+  document.querySelectorAll('.iz-grafik').forEach(function (g) {
+    var tip = g.querySelector('.iz-tip');
+    g.querySelectorAll('[data-tip]').forEach(function (k) {
+      k.tabIndex = 0;
+      var tampil = function () {
+        var rg = g.getBoundingClientRect(), rk = k.getBoundingClientRect(), b = k.querySelector('.iz-batang').getBoundingClientRect();
+        tip.textContent = k.dataset.tip;
+        tip.style.left = (rk.left - rg.left + rk.width / 2) + 'px';
+        tip.style.top = (Math.min(b.top, rk.bottom - 4) - rg.top) + 'px';
+        tip.hidden = false;
+      };
+      k.addEventListener('mouseenter', tampil);
+      k.addEventListener('focus', tampil);
+      k.addEventListener('mouseleave', function () { tip.hidden = true; });
+      k.addEventListener('blur', function () { tip.hidden = true; });
+    });
+  });
 })();
