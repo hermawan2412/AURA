@@ -1,5 +1,5 @@
 -- Modul pengajuan izin keluar sementara / pulang awal (rancangan:
--- web-parantau/docs/superpowers/specs/2026-11-16-aura-pengajuan-izin-design.md,
+-- docs/rancangan-izin-2026-11-16.md,
 -- rencana: docs/rencana-izin-v1.md).
 --
 -- Aditif saja: tidak mengubah/menghapus tabel surat lama. Modul mulai dalam

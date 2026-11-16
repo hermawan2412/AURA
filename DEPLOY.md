@@ -161,7 +161,7 @@ Keenam jenis surat bawaan sudah dimigrasikan penuh ke mesin template/variabel ge
 
 ## Modul pengajuan izin (db/037)
 
-Rancangan: `web-parantau/docs/superpowers/specs/2026-11-16-aura-pengajuan-izin-design.md`, rencana: `docs/rencana-izin-v1.md`.
+Rancangan: `docs/rancangan-izin-2026-11-16.md`, rencana: `docs/rencana-izin-v1.md`.
 
 1. Backup DB `aura` + `templates/uploaded/` dulu, uji restore.
 2. `mysql aura < db/037_izin_modul.sql` (aditif, idempoten; modul mulai `nonaktif`, jalur surat lama tetap jalan).

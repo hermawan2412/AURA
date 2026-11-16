@@ -1,6 +1,6 @@
 # Rencana implementasi modul pengajuan izin (v1)
 
-Tanggal: 16 November 2026. Sumber rancangan: `~/repo/web-parantau/docs/superpowers/specs/2026-11-16-aura-pengajuan-izin-design.md` (bagian 0 dan 2 memuat keputusan pengguna terbaru).
+Tanggal: 16 November 2026. Sumber rancangan: `docs/rancangan-izin-2026-11-16.md` (bagian 0 dan 2 memuat keputusan pengguna terbaru).
 
 Rencana ini tidak memberi izin deployment. Semua pekerjaan dilakukan di lokal dengan data sintetis.
 
