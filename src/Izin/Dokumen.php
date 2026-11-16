@@ -246,7 +246,8 @@ class Dokumen
     {
         $soffice = getenv('AURA_SOFFICE') ?: 'soffice';
         $cmd = array($soffice, '-env:UserInstallation=file://' . $kerja . '/profil', '--headless', '--convert-to', 'pdf', '--outdir', $kerja, $kerja . '/surat.docx');
-        $proc = proc_open($cmd, array(1 => array('pipe', 'w'), 2 => array('pipe', 'w')), $pipa);
+        // cwd = folder kerja: skrip soffice melakukan cd ke folder aktif; folder lain bisa tak terbaca user aplikasi.
+        $proc = proc_open($cmd, array(1 => array('pipe', 'w'), 2 => array('pipe', 'w')), $pipa, $kerja, array('PATH' => '/usr/local/bin:/usr/bin:/bin:/opt/homebrew/bin', 'HOME' => $kerja));
         if (!is_resource($proc)) {
             throw new RuntimeException('soffice tidak dapat dijalankan.');
         }
