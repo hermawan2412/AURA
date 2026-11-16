@@ -2,7 +2,7 @@
    Spasi grid 4/8px; gerak hanya opacity/transform, 150-300ms, ease-out saat masuk;
    semua dimatikan pada prefers-reduced-motion (blok paling bawah). */
 :root{
-  --iz-m150:150ms; --iz-m200:200ms; --iz-m300:300ms;
+  --iz-m100:100ms; --iz-m150:150ms; --iz-m200:200ms; --iz-m300:300ms;
   --iz-ease-out:cubic-bezier(.16,1,.3,1); --iz-ease-in:cubic-bezier(.7,0,.84,0);
 }
 
@@ -125,7 +125,7 @@
 
 /* ---------- Gerak ---------- */
 @keyframes iz-masuk{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:none;}}
-@keyframes iz-muncul{from{opacity:0; transform:scale(.96);} to{opacity:1; transform:none;}}
+@keyframes iz-muncul{from{opacity:0; transform:scale(.98);} to{opacity:1; transform:none;}}
 @keyframes iz-centang{from{opacity:0; transform:scale(.6) rotate(-12deg);} to{opacity:1; transform:none;}}
 @keyframes iz-denyut{0%,100%{opacity:1;} 50%{opacity:.35;}}
 
@@ -134,7 +134,7 @@
 .iz-anim > :nth-child(3){animation-delay:100ms;}
 .iz-anim > :nth-child(4){animation-delay:150ms;}
 .iz-anim > :nth-child(n+5){animation-delay:200ms;}
-.iz-tabel tbody tr{animation:iz-masuk var(--iz-m200) var(--iz-ease-out) both; animation-delay:calc(min(var(--i, 0), 10) * 30ms);}
+.iz-tabel tbody tr{animation:iz-masuk var(--iz-m200) var(--iz-ease-out) both; animation-delay:calc(min(var(--i, 0), 6) * 30ms);}
 .iz-bagian .badge, .iz-meta .badge{animation:iz-muncul var(--iz-m200) var(--iz-ease-out) both 150ms;}
 .iz-status--ok .iz-status-ikon svg{animation:iz-centang var(--iz-m300) var(--iz-ease-out) both 200ms;}
 /* Denyut hanya untuk keadaan yang memang sedang berjalan (menunggu keputusan). */
@@ -170,7 +170,7 @@
 .iz-kpi{display:grid; grid-template-columns:repeat(5, minmax(0,1fr)); gap:12px;}
 .iz-kpi-ubin{display:flex; flex-direction:column; gap:4px; padding:16px 20px; background:var(--surface); border:1px solid var(--border); border-radius:var(--r-md); box-shadow:var(--shadow-sm); text-decoration:none; color:inherit; transition:border-color var(--iz-m150) var(--iz-ease-out);}
 a.iz-kpi-ubin:hover{border-color:var(--border-strong);}
-.iz-kpi-ubin span{font-size:.78rem; color:var(--ink-dim);}
+.iz-kpi-ubin > span{font-size:.78rem; color:var(--ink-dim);}
 .iz-kpi-ubin b{font-family:var(--sans); font-size:2rem; line-height:1.1; font-weight:700;}
 .iz-kpi-ubin b em{font-style:normal; font-size:.9rem; font-weight:600; color:var(--ink-dim);}
 .iz-kpi-ubin small{font-size:.78rem; color:var(--ink-dim);}
@@ -194,7 +194,7 @@ a.iz-kpi-ubin:hover{border-color:var(--border-strong);}
 .iz-grafik-sumbu{display:flex; flex-direction:column; justify-content:space-between; font-size:.72rem; color:var(--ink-dim); text-align:right;}
 .iz-grafik-batang{display:flex; align-items:flex-end; gap:2px; border-bottom:1px solid var(--border-strong); background:linear-gradient(to bottom, var(--border) 1px, transparent 1px) 0 0 / 100% 50%;}
 .iz-batang-kolom{flex:1; height:100%; display:flex; align-items:flex-end; justify-content:center; cursor:default;}
-.iz-batang{display:block; width:62%; max-width:16px; margin:0 auto; background:var(--iz-seri); border-radius:4px 4px 0 0; transform-origin:bottom; animation:iz-tumbuh var(--iz-m300) var(--iz-ease-out) both; animation-delay:calc(var(--i, 0) * 12ms);}
+.iz-batang{display:block; width:62%; max-width:16px; margin:0 auto; background:var(--iz-seri); border-radius:4px 4px 0 0; transform-origin:bottom; animation:iz-tumbuh var(--iz-m300) var(--iz-ease-out) both; animation-delay:calc(min(var(--i, 0), 16) * 12ms);}
 .iz-batang-kolom.iz-libur .iz-batang{opacity:.45;}
 .iz-batang-kolom:hover .iz-batang, .iz-batang-kolom.iz-kini .iz-batang{opacity:1; filter:brightness(1.1);}
 .iz-grafik-label{grid-column:2; display:flex; justify-content:space-between; font-size:.72rem; color:var(--ink-dim);}
@@ -205,8 +205,56 @@ a.iz-kpi-ubin:hover{border-color:var(--border-strong);}
 @media (max-width: 1100px){.iz-kpi{grid-template-columns:repeat(3, minmax(0,1fr));}}
 @media (max-width: 860px){.iz-kpi{grid-template-columns:1fr 1fr;} .iz-dua{grid-template-columns:1fr;}}
 
+
+/* ---------- Gerak tambahan ---------- */
+/* Perpindahan antarhalaman modul izin (View Transitions lintas dokumen; browser lain: langsung). */
+@view-transition{navigation:auto;}
+.sidebar{view-transition-name:iz-sidebar;}
+::view-transition-group(iz-sidebar){animation:none;}
+::view-transition-old(root){animation:iz-keluar-hal var(--iz-m150) var(--iz-ease-in) both;}
+::view-transition-new(root){animation:iz-masuk var(--iz-m200) var(--iz-ease-out) both;}
+@keyframes iz-keluar-hal{to{opacity:0;}}
+
+/* Dialog: keluar lebih cepat dari masuk (150ms ease-in). */
+.iz-dialog.iz-tutup{animation:iz-dialog-keluar var(--iz-m150) var(--iz-ease-in) both;}
+.iz-dialog.iz-tutup::backdrop{animation:iz-keluar-hal var(--iz-m150) var(--iz-ease-in) both;}
+@keyframes iz-dialog-keluar{to{opacity:0; transform:scale(.98);}}
+
+/* Tombol sedang memproses: putaran kecil + teks (makna tidak bergantung pada gerak). */
+.btn[aria-busy="true"]{opacity:.75; pointer-events:none;}
+.iz-putar{width:16px; height:16px; border-radius:50%; border:2px solid currentColor; border-right-color:transparent; animation:iz-putar 700ms linear infinite;}
+@keyframes iz-putar{to{transform:rotate(360deg);}}
+
+/* Riwayat muncul bertahap (<=30ms/baris). */
+.iz-waktu li{animation:iz-masuk var(--iz-m200) var(--iz-ease-out) both;}
+.iz-waktu li:nth-child(2){animation-delay:30ms;} .iz-waktu li:nth-child(3){animation-delay:60ms;}
+.iz-waktu li:nth-child(4){animation-delay:90ms;} .iz-waktu li:nth-child(n+5){animation-delay:120ms;}
+
+/* Mikro-interaksi hover. */
+.iz-tabel .iz-panah svg{transition:transform var(--iz-m150) var(--iz-ease-out);}
+.iz-tabel tr.iz-baris:hover .iz-panah svg{transform:translateX(3px);}
+a.iz-kpi-ubin{transition:transform var(--iz-m150) var(--iz-ease-out), border-color var(--iz-m150) var(--iz-ease-out);}
+a.iz-kpi-ubin:hover{transform:translateY(-2px);}
+.iz-pilihan label:active{transform:scale(.99);}
+.iz-pilihan label{transition:border-color var(--iz-m150) var(--iz-ease-out), background-color var(--iz-m150) var(--iz-ease-out), transform var(--iz-m100) var(--iz-ease-out);}
+
+/* Disetujui: cincin tipis memudar sekali di sekitar ikon centang. */
+.iz-status-ikon{position:relative;}
+.iz-status--ok .iz-status-ikon::after{content:""; position:absolute; inset:-1px; border-radius:50%; border:2px solid var(--badge-aktif-ink); opacity:0; animation:iz-cincin var(--iz-m300) var(--iz-ease-out) 350ms both;}
+@keyframes iz-cincin{from{opacity:.6; transform:scale(1);} to{opacity:0; transform:scale(1.5);}}
+
+/* Tooltip grafik & navigasi pengaturan aktif. */
+.iz-tip{animation:iz-fade var(--iz-m150) var(--iz-ease-out);}
+.iz-atur-nav a{transition:background-color var(--iz-m150) var(--iz-ease-out), color var(--iz-m150) var(--iz-ease-out);}
+.iz-atur-nav a[aria-current="true"]{background:var(--primary-soft); color:var(--primary); font-weight:600;}
+html:has(.iz-atur){scroll-behavior:smooth;}
+
 @media (prefers-reduced-motion: reduce){
+  /* Instan: tanpa translate/scale/denyut; makna tetap lewat teks, ikon, dan warna. */
   *, *::before, *::after{animation:none !important; transition:none !important;}
+  ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*){animation:none !important;}
+  html:has(.iz-atur){scroll-behavior:auto;}
+  .iz-putar{display:none;}
 }
 
 .visually-hidden{position:absolute !important; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap;}

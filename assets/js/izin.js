@@ -36,9 +36,69 @@
       if (f) f.focus();
     });
   });
+  var gerakKurang = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Tutup dialog dengan animasi keluar 150ms; Esc tetap langsung menutup (animasi hanya visual).
+  var tutupDialog = function (d) {
+    if (gerakKurang || d.classList.contains('iz-tutup')) { d.close(); return; }
+    d.classList.add('iz-tutup');
+    setTimeout(function () { d.classList.remove('iz-tutup'); d.close(); }, 150);
+  };
   document.querySelectorAll('[data-tutup]').forEach(function (b) {
-    b.addEventListener('click', function () { b.closest('dialog').close(); });
+    b.addEventListener('click', function () { tutupDialog(b.closest('dialog')); });
   });
+  document.querySelectorAll('dialog.iz-dialog').forEach(function (d) {
+    d.addEventListener('cancel', function (e) { e.preventDefault(); tutupDialog(d); });
+    d.addEventListener('click', function (e) { if (e.target === d) tutupDialog(d); }); // klik latar
+  });
+
+  // Tombol kirim: tampilkan "Memproses…" + putaran, dan cegah kirim ganda.
+  document.querySelectorAll('.iz-page form, .iz-atur form, .iz-dialog form, .iz-aksi form').forEach(function (f) {
+    if (f.method.toLowerCase() !== 'post') return;
+    f.addEventListener('submit', function (e) {
+      var b = e.submitter || f.querySelector('button[type=submit]');
+      if (!b || !f.checkValidity()) return;
+      setTimeout(function () { // setelah nilai tombol ikut terkirim
+        b.setAttribute('aria-busy', 'true');
+        b.disabled = true;
+        b.innerHTML = '<span class="iz-putar" aria-hidden="true"></span>Memproses…';
+      }, 0);
+    });
+  });
+
+  // Kembali lewat tombol Back (bfcache): pulihkan tombol yang tadi dikunci.
+  window.addEventListener('pageshow', function (e) { if (e.persisted) location.reload(); });
+
+  // Angka dasbor menghitung naik (300ms); dilewati bila gerak dikurangi.
+  if (!gerakKurang) {
+    document.querySelectorAll('[data-angka]').forEach(function (el) {
+      var target = Number(el.dataset.angka), mulai = null;
+      if (!target) return;
+      var langkah = function (t) {
+        if (mulai === null) mulai = t;
+        var p = Math.min(1, (t - mulai) / 300);
+        el.textContent = Math.round(target * (1 - Math.pow(1 - p, 3)));
+        if (p < 1) requestAnimationFrame(langkah);
+      };
+      el.textContent = '0';
+      requestAnimationFrame(langkah);
+    });
+  }
+
+  // Navigasi pengaturan menyorot bagian yang sedang terlihat.
+  var nav = document.querySelector('.iz-atur-nav');
+  if (nav && 'IntersectionObserver' in window) {
+    var tautan = {};
+    nav.querySelectorAll('a').forEach(function (a) { tautan[a.getAttribute('href').slice(1)] = a; });
+    var io = new IntersectionObserver(function (isi) {
+      isi.forEach(function (x) {
+        if (!x.isIntersecting) return;
+        nav.querySelectorAll('a').forEach(function (a) { a.removeAttribute('aria-current'); });
+        if (tautan[x.target.id]) tautan[x.target.id].setAttribute('aria-current', 'true');
+      });
+    }, { rootMargin: '-20% 0px -70% 0px' });
+    Object.keys(tautan).forEach(function (id) { var el = document.getElementById(id); if (el) io.observe(el); });
+  }
 
   // Form pengajuan: tampilkan isian sesuai pilihan + peringatan bila ditinggal saat sudah diisi.
   var f = document.getElementById('form-izin');

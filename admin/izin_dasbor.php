@@ -115,10 +115,10 @@ function ikonStatus($baik)
 
   <!-- KPI (maks. 5) -->
   <div class="iz-kpi iz-anim">
-    <div class="iz-kpi-ubin"><span>Sedang izin sekarang</span><b class="tnum"><?php echo $sedangIzin; ?></b><small><?php echo count($izinHariIni); ?> izin disetujui hari ini</small></div>
-    <a class="iz-kpi-ubin" href="izin_register.php?status=menunggu_persetujuan&amp;dari=<?php echo h($mulaiGrafik); ?>&amp;sampai=<?php echo h($lokal->modify('+30 days')->format('Y-m-d')); ?>"><span>Menunggu keputusan</span><b class="tnum"><?php echo count($menunggu); ?></b><small><?php echo count($lama); ?> lebih dari 30 menit</small></a>
-    <div class="iz-kpi-ubin <?php echo $jumlahMasalah ? 'iz-kpi--awas' : ''; ?>"><span>Perlu tindakan</span><b class="tnum"><?php echo $jumlahMasalah; ?></b><small><?php echo $jumlahMasalah ? 'lihat daftar di bawah' : 'tidak ada masalah'; ?></small></div>
-    <a class="iz-kpi-ubin" href="izin_register.php"><span>Izin bulan ini</span><b class="tnum"><?php echo $totalBulan; ?></b><small><?php echo isset($perStatus['disetujui']) ? (int) $perStatus['disetujui'] : 0; ?> disetujui</small></a>
+    <div class="iz-kpi-ubin"><span>Sedang izin sekarang</span><b class="tnum"><span data-angka="<?php echo (int) $sedangIzin; ?>"><?php echo $sedangIzin; ?></span></b><small><?php echo count($izinHariIni); ?> izin disetujui hari ini</small></div>
+    <a class="iz-kpi-ubin" href="izin_register.php?status=menunggu_persetujuan&amp;dari=<?php echo h($mulaiGrafik); ?>&amp;sampai=<?php echo h($lokal->modify('+30 days')->format('Y-m-d')); ?>"><span>Menunggu keputusan</span><b class="tnum"><span data-angka="<?php echo (int) count($menunggu); ?>"><?php echo count($menunggu); ?></span></b><small><?php echo count($lama); ?> lebih dari 30 menit</small></a>
+    <div class="iz-kpi-ubin <?php echo $jumlahMasalah ? 'iz-kpi--awas' : ''; ?>"><span>Perlu tindakan</span><b class="tnum"><span data-angka="<?php echo (int) $jumlahMasalah; ?>"><?php echo $jumlahMasalah; ?></span></b><small><?php echo $jumlahMasalah ? 'lihat daftar di bawah' : 'tidak ada masalah'; ?></small></div>
+    <a class="iz-kpi-ubin" href="izin_register.php"><span>Izin bulan ini</span><b class="tnum"><span data-angka="<?php echo (int) $totalBulan; ?>"><?php echo $totalBulan; ?></span></b><small><?php echo isset($perStatus['disetujui']) ? (int) $perStatus['disetujui'] : 0; ?> disetujui</small></a>
     <div class="iz-kpi-ubin"><span>Rata-rata waktu keputusan</span><b class="tnum"><?php echo $rata[1] ? (int) round($rata[0]) . '<em> mnt</em>' : '–'; ?></b><small><?php echo (int) $rata[1]; ?> keputusan bulan ini</small></div>
   </div>
 
