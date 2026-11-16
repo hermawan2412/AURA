@@ -3,7 +3,7 @@
 
 Hasil: templates/izin_modul_pegawai.docx, templates/izin_modul_hakim.docx.
 - Pegawai: tambah baris "Waktu Izin : ${waktu_izin}" sesudah "Unit Kerja" penerima (format asli tidak punya tanggal/jam).
-- Pegawai: blok "Mengetahui" diisi sistem (${mengetahui_judul}/${mengetahui_jabatan}/${mengetahui_nama_lengkap}), catatan "** Coret salah satu" dibuang.
+- Pegawai: blok "Mengetahui" diisi sistem (${mengetahui_judul}/${mengetahui_jabatan}/${mengetahui_nama_lengkap}), catatan "** Coret salah satu" dan catatan kaki "*" dibuang.
 - Keduanya: tambah paragraf kecil ${keterangan_aura} di akhir ("Disetujui melalui AURA pada ...").
 Tata letak lain tidak diubah. Jalankan ulang bila template sumber berubah:
     python3 migrasi/buat_template_izin_modul.py
@@ -71,6 +71,10 @@ def blok_mengetahui(xml):
         return re.sub(r'(<w:t[^>]*>)[^<]*</w:t>', isi, p)
     xml = ganti_paragraf(xml, lambda t: t.startswith('Ketua/Wakil Ketua') and t.endswith('**'), jabatan)
     xml = ganti_paragraf(xml, lambda t: t == '** Coret salah satu', lambda p: '')
+    # Catatan kaki "*" (aturan pemberi izin/mengetahui) juga dibuang - sudah ditegakkan sistem.
+    xml = ganti_paragraf(xml, lambda t: t == 'Keterangan.', lambda p: '')
+    xml = ganti_paragraf(xml, lambda t: t.startswith('* Yang memberikan izin'), lambda p: '')
+    xml = ganti_paragraf(xml, lambda t: t.startswith('Dengan ini saya*'), lambda p: p.replace('<w:t>*</w:t>', '<w:t></w:t>', 1))
     return xml
 
 
