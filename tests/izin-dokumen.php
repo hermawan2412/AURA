@@ -27,6 +27,7 @@ cek('pegawai: PDF ada & hash cocok', is_file(D::pathPdf($d)) && hash_file('sha25
 $nilai = json_decode($d['snapshot_nilai'], true);
 cek('pegawai: waktu izin eksplisit', strpos($nilai['waktu_izin'], 'Jumat, 20 November 2026, pukul 14.00 WITA s.d. 15.30 WITA') === 0, $nilai['waktu_izin']);
 cek('pegawai: mengetahui Wakil', $nilai['mengetahui_nama_lengkap'] === 'Uji Wakil', $nilai);
+cek('pegawai: jabatan mengetahui otomatis', $nilai['mengetahui_jabatan'] === 'Wakil Ketua Pengadilan Agama Rantau', $nilai);
 cek('pegawai: keterangan AURA', strpos($nilai['keterangan_aura'], 'Disetujui melalui AURA oleh Uji Panitera pada 20 November 2026 pukul 13.05 WITA') === 0, $nilai['keterangan_aura']);
 copy(D::pathPdf($d), $contoh . '/contoh-izin-pegawai.pdf');
 

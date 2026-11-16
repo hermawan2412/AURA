@@ -3,6 +3,7 @@
 
 Hasil: templates/izin_modul_pegawai.docx, templates/izin_modul_hakim.docx.
 - Pegawai: tambah baris "Waktu Izin : ${waktu_izin}" sesudah "Unit Kerja" penerima (format asli tidak punya tanggal/jam).
+- Pegawai: blok "Mengetahui" diisi sistem (${mengetahui_judul}/${mengetahui_jabatan}/${mengetahui_nama_lengkap}), catatan "** Coret salah satu" dibuang.
 - Keduanya: tambah paragraf kecil ${keterangan_aura} di akhir ("Disetujui melalui AURA pada ...").
 Tata letak lain tidak diubah. Jalankan ulang bila template sumber berubah:
     python3 migrasi/buat_template_izin_modul.py
@@ -46,7 +47,31 @@ def pegawai(xml):
                         ('${penerima_izin_unit_kerja}', '${waktu_izin}')):
         assert baru.count(lama) == 1, lama
         baru = baru.replace(lama, ganti)
-    return tambah_keterangan(xml[:p.end()] + baru + xml[p.end():])
+    xml = xml[:p.end()] + baru + xml[p.end():]
+    return tambah_keterangan(blok_mengetahui(xml))
+
+
+def ganti_paragraf(xml, cocok, fungsi):
+    hasil = [m for m in re.finditer(r'<w:p[ >].*?</w:p>', xml, re.S) if cocok(re.sub(r'<[^>]+>', '', m.group(0)))]
+    assert len(hasil) == 1, 'paragraf tidak unik'
+    m = hasil[0]
+    return xml[:m.start()] + fungsi(m.group(0)) + xml[m.end():]
+
+
+def blok_mengetahui(xml):
+    # Blok "Mengetahui" diisi sistem (Wakil yang diberi tahu), bukan "Ketua/Wakil Ketua ... **" untuk dicoret;
+    # bila tidak ada pejabat mengetahui, ketiga baris dikosongkan. Catatan "** Coret salah satu" dibuang.
+    xml = ganti_paragraf(xml, lambda t: t == 'Mengetahui', lambda p: p.replace('<w:t>Mengetahui</w:t>', '<w:t>${mengetahui_judul}</w:t>'))
+
+    def jabatan(p):
+        n = [0]
+        def isi(m):
+            n[0] += 1
+            return m.group(1) + ('${mengetahui_jabatan}' if n[0] == 1 else '') + '</w:t>'
+        return re.sub(r'(<w:t[^>]*>)[^<]*</w:t>', isi, p)
+    xml = ganti_paragraf(xml, lambda t: t.startswith('Ketua/Wakil Ketua') and t.endswith('**'), jabatan)
+    xml = ganti_paragraf(xml, lambda t: t == '** Coret salah satu', lambda p: '')
+    return xml
 
 
 ubah('izin_keluar_kantor_pegawai.docx', 'izin_modul_pegawai.docx', pegawai)

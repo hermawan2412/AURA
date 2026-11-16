@@ -228,7 +228,10 @@ class Dokumen
             'penerima_izin_unit_kerja' => (string) $p['pemohon_unit_kerja'],
             'waktu_izin' => $hari . ', ' . Formatter::tanggalIndonesia($p['tanggal']) . ', pukul ' . $mulai . ' ' . $zona . ' s.d. '
                 . ($p['jam_kembali'] ? $selesai . ' ' . $zona : $selesai . ' (pulang awal)'),
-            'mengetahui_nama_lengkap' => $p['mengetahui_nama'] !== null ? $p['mengetahui_nama'] : '-',
+            // Mengetahui selalu Wakil (Routing hanya memberi 'wakil'); kosong = blok tidak tampil.
+            'mengetahui_judul' => $p['mengetahui_nama'] !== null ? 'Mengetahui' : '',
+            'mengetahui_jabatan' => $p['mengetahui_nama'] !== null ? 'Wakil Ketua Pengadilan Agama Rantau' : '',
+            'mengetahui_nama_lengkap' => $p['mengetahui_nama'] !== null ? $p['mengetahui_nama'] : '',
         );
     }
 
