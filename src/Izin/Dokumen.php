@@ -70,7 +70,7 @@ class Dokumen
             $s = $db->prepare('SELECT * FROM izin_permohonan WHERE id = ? FOR UPDATE');
             $s->execute(array((int) $permohonanId));
             $p = $s->fetch();
-            $bolehTerbit = $p && ($p['status'] === 'disetujui' || $p['status'] === 'diajukan_ke_pta');
+            $bolehTerbit = $p && $p['status'] === 'disetujui';
             if (!$bolehTerbit) {
                 throw new IzinException('Surat hanya dapat diterbitkan untuk izin yang disetujui.');
             }
@@ -186,23 +186,18 @@ class Dokumen
         $mulai = str_replace(':', '.', substr($p['jam_mulai'], 0, 5));
         $selesai = $p['jam_kembali'] ? str_replace(':', '.', substr($p['jam_kembali'], 0, 5)) : 'selesai jam kerja';
 
-        if ($p['pemberi_eksternal'] !== null) {
-            $pemberi = array('nama' => str_repeat('.', 40), 'jabatan' => $p['pemberi_eksternal'], 'nip' => '', 'unit_kerja' => '');
-            $keterangan = 'Diajukan melalui AURA pada ' . self::waktuLokal($p['diajukan_at'], $tz) . ' ' . $zona . '. Persetujuan oleh ' . $p['pemberi_eksternal'] . '. Nomor register ' . $nomor . '.';
-        } else {
-            $s = $db->prepare(
-                'SELECT t.pemberi_nama, t.pemberi_jabatan, t.diputus_at, pg.nip, pg.unit_kerja
-                 FROM izin_tahap t JOIN pegawai pg ON pg.id = t.pemberi_pegawai_id
-                 WHERE t.permohonan_id = ? AND t.status = \'selesai\' ORDER BY t.id DESC LIMIT 1'
-            );
-            $s->execute(array($p['id']));
-            $t = $s->fetch();
-            if (!$t) {
-                throw new RuntimeException('Tahap persetujuan tidak ditemukan.');
-            }
-            $pemberi = array('nama' => $t['pemberi_nama'], 'jabatan' => $t['pemberi_jabatan'], 'nip' => $t['nip'], 'unit_kerja' => $t['unit_kerja']);
-            $keterangan = 'Disetujui melalui AURA oleh ' . $t['pemberi_nama'] . ' pada ' . self::waktuLokal($t['diputus_at'], $tz) . ' ' . $zona . '. Nomor register ' . $nomor . '.';
+        $s = $db->prepare(
+            'SELECT t.pemberi_nama, t.pemberi_jabatan, t.diputus_at, pg.nip, pg.unit_kerja
+             FROM izin_tahap t JOIN pegawai pg ON pg.id = t.pemberi_pegawai_id
+             WHERE t.permohonan_id = ? AND t.status = \'selesai\' ORDER BY t.id DESC LIMIT 1'
+        );
+        $s->execute(array($p['id']));
+        $t = $s->fetch();
+        if (!$t) {
+            throw new RuntimeException('Tahap persetujuan tidak ditemukan.');
         }
+        $pemberi = array('nama' => $t['pemberi_nama'], 'jabatan' => $t['pemberi_jabatan'], 'nip' => $t['nip'], 'unit_kerja' => $t['unit_kerja']);
+        $keterangan = 'Disetujui melalui AURA oleh ' . $t['pemberi_nama'] . ' pada ' . self::waktuLokal($t['diputus_at'], $tz) . ' ' . $zona . '. Nomor register ' . $nomor . '.';
 
         $umum = array(
             'pemberi_izin_nama_lengkap' => $pemberi['nama'],

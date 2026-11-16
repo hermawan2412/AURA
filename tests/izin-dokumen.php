@@ -63,15 +63,10 @@ $db->exec("UPDATE pegawai SET nama_lengkap = 'Nama Berubah' WHERE id = 3");
 cek('A17 arsip identik setelah data pegawai berubah', hash_file('sha256', D::pathPdf(D::terbitkan($db, $idHak, $jumat))) === $hashLama);
 $db->exec("UPDATE pegawai SET nama_lengkap = 'Uji Hakim Satu' WHERE id = 3");
 
-// Ketua -> KPTA: surat tersedia saat diajukan
-$idKetua = P::ajukan($db, 1, array('jenis' => 'keluar_sementara', 'tanggal' => '2026-11-20', 'jam_mulai' => '14:00', 'jam_kembali' => '16:00', 'alasan' => 'Rapat koordinasi di PTA Banjarmasin'), $jumat);
-$d = D::terbitkan($db, $idKetua, $jumat);
-cek('ketua: surat terbit saat diajukan ke PTA', $d['status'] === 'siap', $d);
-$nilai = json_decode($d['snapshot_nilai'], true);
-cek('ketua: pemberi = KPTA', $nilai['pemberi_izin_jabatan'] === P::PEMBERI_PTA, $nilai);
-copy(D::pathPdf($d), $contoh . '/contoh-izin-ketua-kpta.pdf');
-
-cek('nomor register berurutan', D::muat($db, $idKetua)['nomor'] === 'IZN/2026/3');
+// Nomor register berurutan untuk surat berikutnya
+$idLagi = P::ajukan($db, 9, array('jenis' => 'pulang_awal', 'tanggal' => '2026-11-20', 'jam_mulai' => '16:00', 'alasan' => 'Menjemput anak di sekolah'), $jumat);
+P::setujui($db, 6, $idLagi, 1, '', $jumat);
+cek('nomor register berurutan', D::terbitkan($db, $idLagi, $jumat)['nomor'] === 'IZN/2026/3');
 
 echo $gagal === 0 ? "OK izin-dokumen (contoh PDF: $contoh)\n" : "$gagal gagal\n";
 exit($gagal === 0 ? 0 : 1);

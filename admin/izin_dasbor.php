@@ -53,7 +53,7 @@ $sedangIzin = count(array_filter($izinHariIni, function ($p) use ($jamKini) {
 // ---------- Perlu tindakan ----------
 $menunggu = $q("SELECT p.id, p.pemohon_nama, p.status, p.diajukan_at, t.pemberi_nama FROM izin_permohonan p
                 LEFT JOIN izin_tahap t ON t.permohonan_id = p.id AND t.status = 'menunggu'
-                WHERE p.status IN ('menunggu_persetujuan','diajukan_ke_pta') ORDER BY p.diajukan_at")->fetchAll();
+                WHERE p.status = 'menunggu_persetujuan' ORDER BY p.diajukan_at")->fetchAll();
 $batasLama = Permohonan::utc($kini->modify('-30 minutes'));
 $lama = array_values(array_filter($menunggu, function ($p) use ($batasLama) {
     return $p['status'] === 'menunggu_persetujuan' && $p['diajukan_at'] < $batasLama;
@@ -87,9 +87,9 @@ $tautan = function ($id, $teks) use ($db, $userId, $isAdmin) {
 $perStatus = $q("SELECT status, COUNT(*) FROM izin_permohonan WHERE tanggal BETWEEN ? AND ? GROUP BY status", array($awalBulan, $lokal->format('Y-m-t')))->fetchAll(PDO::FETCH_KEY_PAIR);
 $perJenis = $q("SELECT jenis, COUNT(*) FROM izin_permohonan WHERE tanggal BETWEEN ? AND ? GROUP BY jenis", array($awalBulan, $lokal->format('Y-m-t')))->fetchAll(PDO::FETCH_KEY_PAIR);
 $totalBulan = array_sum($perStatus);
-// Rata-rata hanya untuk yang benar-benar diputus pejabat AURA (bukan PTA, bukan yang masih menunggu).
+// Rata-rata hanya untuk yang benar-benar diputus pejabat (bukan yang masih menunggu).
 $rata = $q("SELECT AVG(TIMESTAMPDIFF(MINUTE, diajukan_at, diputus_at)), COUNT(*) FROM izin_permohonan
-            WHERE tanggal BETWEEN ? AND ? AND status IN ('disetujui','ditolak','dicabut') AND pemberi_eksternal IS NULL AND diputus_at IS NOT NULL",
+            WHERE tanggal BETWEEN ? AND ? AND status IN ('disetujui','ditolak','dicabut') AND diputus_at IS NOT NULL",
     array($awalBulan, $lokal->format('Y-m-t')))->fetch(PDO::FETCH_NUM);
 
 // ---------- Grafik: izin disetujui per hari kerja, 30 hari terakhir ----------

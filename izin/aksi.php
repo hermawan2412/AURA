@@ -41,11 +41,6 @@ try {
             Permohonan::cabut($db, $userId, $id, $versi, $catatan, $kini);
             kilat('Izin dicabut.');
             break;
-        case 'pta_setuju':
-        case 'pta_tolak':
-            Permohonan::catatHasilPta($db, $userId, $id, $versi, $aksi === 'pta_setuju', $catatan, $kini);
-            kilat('Hasil dari KPTA dicatat.');
-            break;
         case 'alihkan':
             if (!Auth::isAdmin()) {
                 throw new IzinException('Hanya admin yang dapat mengalihkan permohonan.');

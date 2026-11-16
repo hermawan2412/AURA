@@ -98,17 +98,12 @@ cek('A01 tanpa mengetahui', P::muat($db, $id4)['mengetahui_user_id'] === null);
 ditolak('setujui setelah tanggal lewat', function () use ($db, $id4, $sabtu) { P::setujui($db, 1, $id4, 1, '', $sabtu); });
 P::tolak($db, 1, $id4, 1, 'Sudah lewat', $sabtu);
 
-// --- A07b Ketua -> KPTA ---
-$id5 = P::ajukan($db, 1, array('jenis' => 'pulang_awal', 'mulai_sekarang' => true, 'alasan' => 'Undangan rapat di PTA'), $jumat);
-$p5 = P::muat($db, $id5);
-cek('A07b status diajukan_ke_pta', $p5['status'] === 'diajukan_ke_pta', $p5['status']);
-cek('A28 jam mulai dari server', $p5['jam_mulai'] === '13:05:00', $p5['jam_mulai']);
-cek('A07b tanpa tahap', count(P::tahap($db, $id5)) === 0);
-cek('A07b Wakil diberi tahu saat pengajuan', satu($db, "SELECT COUNT(*) FROM izin_notifikasi WHERE permohonan_id=? AND penerima_user_id=2 AND peristiwa='diajukan_pta'", array($id5)) == 1);
-ditolak('A07b Wakil tak bisa catat hasil PTA', function () use ($db, $id5, $jumat) { P::catatHasilPta($db, 2, $id5, 1, true, 'x', $jumat); });
-ditolak('A07b catat tanpa catatan', function () use ($db, $id5, $jumat) { P::catatHasilPta($db, 1, $id5, 1, true, '', $jumat); });
-P::catatHasilPta($db, 1, $id5, 1, true, 'Disetujui KPTA via telepon 13.10', $jumat);
-cek('A07b disetujui', P::muat($db, $id5)['status'] === 'disetujui');
+// --- Ketua: di luar ruang lingkup; "Mulai sekarang" memakai jam server ---
+ditolak('Ketua tidak mengajukan lewat AURA', function () use ($db, $jumat) {
+    P::ajukan($db, 1, array('jenis' => 'pulang_awal', 'mulai_sekarang' => true, 'alasan' => 'Rapat di luar kantor'), $jumat);
+});
+$id5 = P::ajukan($db, 4, array('jenis' => 'pulang_awal', 'mulai_sekarang' => true, 'alasan' => 'Menjemput anak di sekolah'), $jumat);
+cek('A28 jam mulai dari server', P::muat($db, $id5)['jam_mulai'] === '13:05:00', P::muat($db, $id5)['jam_mulai']);
 
 // --- cabut ---
 ditolak('cabut oleh bukan pemberi', function () use ($db, $id1, $jumat) { P::cabut($db, 2, $id1, 2, 'x x x', $jumat); });

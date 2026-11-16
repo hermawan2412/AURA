@@ -34,10 +34,9 @@ $isPemohon = (int) $p['pemohon_user_id'] === $userId;
 $isAdmin = Auth::isAdmin();
 $aktifMode = $peng['mode'] === 'aktif';
 $bolehPutus = $aktifMode && $aktif && (int) $aktif['pemberi_user_id'] === $userId;
-$bolehBatal = $isPemohon && in_array($p['status'], array('menunggu_persetujuan', 'diajukan_ke_pta'), true);
-$bolehPta = $aktifMode && $isPemohon && $p['status'] === 'diajukan_ke_pta';
+$bolehBatal = $isPemohon && $p['status'] === 'menunggu_persetujuan';
 $bolehCabut = $aktifMode && $p['status'] === 'disetujui'
-    && ($p['pemberi_eksternal'] !== null ? $isPemohon : ($putus && (int) $putus['pemberi_user_id'] === $userId));
+    && $putus && (int) $putus['pemberi_user_id'] === $userId;
 $bolehAlih = $aktifMode && $isAdmin && $p['status'] === 'menunggu_persetujuan';
 $bolehSalin = $aktifMode && $isPemohon && in_array($p['status'], array('ditolak', 'dibatalkan', 'dicabut'), true);
 
@@ -49,25 +48,20 @@ if ($isPemohon || $isAdmin) {
 }
 
 $kini = new DateTimeImmutable('now', new DateTimeZone($p['zona_waktu']));
-$jamLewat = in_array($p['status'], array('menunggu_persetujuan', 'diajukan_ke_pta'), true)
+$jamLewat = $p['status'] === 'menunggu_persetujuan'
     && $kini->format('Y-m-d H:i:s') > $p['tanggal'] . ' ' . $p['jam_mulai'];
 $namaJenis = ucfirst(Permohonan::LABEL_JENIS[$p['jenis']]);
 $LABEL_AKSI = array('ajukan' => 'mengajukan', 'setujui' => 'menyetujui', 'tolak' => 'menolak', 'batalkan' => 'membatalkan',
-    'cabut' => 'mencabut', 'alihkan' => 'mengalihkan ke pejabat pengganti', 'catat_hasil_pta' => 'mencatat jawaban KPTA');
+    'cabut' => 'mencabut', 'alihkan' => 'mengalihkan ke pejabat pengganti');
 
 // Ringkasan status di bagian atas panel.
 $zona = $p['zona_waktu'];
 switch ($p['status']) {
     case 'disetujui':
-        $ringkas = array('ok', 'centang', 'Izin disetujui', $p['pemberi_eksternal']
-            ? 'Dicatat dari jawaban ' . $p['pemberi_eksternal'] . ' · ' . waktuKantor($p['diputus_at'], $zona)
-            : 'Oleh ' . ($putus ? $putus['pemberi_nama'] : '-') . ' · ' . waktuKantor($p['diputus_at'], $zona));
+        $ringkas = array('ok', 'centang', 'Izin disetujui', 'Oleh ' . ($putus ? $putus['pemberi_nama'] : '-') . ' · ' . waktuKantor($p['diputus_at'], $zona));
         break;
     case 'menunggu_persetujuan':
         $ringkas = array('tunggu', 'jam', 'Menunggu keputusan', $aktif ? $aktif['pemberi_nama'] . ' (' . $aktif['pemberi_jabatan'] . ')' : '');
-        break;
-    case 'diajukan_ke_pta':
-        $ringkas = array('tunggu', 'jam', 'Diajukan ke KPTA', 'Menunggu jawaban ' . $p['pemberi_eksternal'] . '; hasil dicatat pemohon.');
         break;
     default:
         $ringkas = array('stop', 'silang', Permohonan::LABEL_STATUS[$p['status']], waktuKantor($p['diputus_at'], $zona) . ($p['catatan_keputusan'] ? ' · ' . $p['catatan_keputusan'] : ''));
@@ -80,10 +74,6 @@ if ($bolehPutus) {
         . '<form method="post" action="aksi.php" style="margin:0">' . Csrf::field()
         . '<input type="hidden" name="aksi" value="setujui"><input type="hidden" name="id" value="' . $id . '"><input type="hidden" name="versi" value="' . (int) $p['versi'] . '">'
         . '<button type="submit" class="btn btn-primary">' . ikonIzin('centang', 18) . 'Setujui izin</button></form>';
-}
-if ($bolehPta) {
-    $tombol .= '<button type="button" class="btn btn-secondary" data-buka="dlg-pta-tolak">KPTA menolak</button>'
-        . '<button type="button" class="btn btn-primary" data-buka="dlg-pta-setuju">KPTA menyetujui</button>';
 }
 if ($dok && $dok['status'] === 'siap' && !$bolehPutus) {
     $tombol .= '<a class="btn btn-primary" href="unduh.php?id=' . $id . '">' . ikonIzin('unduh', 18) . 'Unduh surat</a>';
@@ -155,7 +145,7 @@ function dialogAksi($idDialog, $aksi, array $p, $judul, $penjelasan, $labelIsian
         <dt>Jenis izin</dt><dd><?php echo h($namaJenis); ?></dd>
         <dt>Waktu</dt><dd><?php echo h(tanggalIzin($p)); ?>, <span class="tnum"><?php echo h(jamIzin($p)); ?></span></dd>
         <dt>Keperluan</dt><dd class="iz-teks"><?php echo nl2br(h($p['alasan'])); ?></dd>
-        <dt>Pemberi izin</dt><dd><?php echo h($p['pemberi_eksternal'] ?: ($putus ? $putus['pemberi_nama'] : ($aktif ? $aktif['pemberi_nama'] : '-'))); ?></dd>
+        <dt>Pemberi izin</dt><dd><?php echo h($putus ? $putus['pemberi_nama'] : ($aktif ? $aktif['pemberi_nama'] : '-')); ?></dd>
         <?php if ($p['mengetahui_nama']): ?>
           <dt>Mengetahui</dt><dd><?php echo h($p['mengetahui_nama']); ?> <span class="redup">(pemberitahuan)</span></dd>
         <?php endif; ?>
@@ -232,10 +222,6 @@ function dialogAksi($idDialog, $aksi, array $p, $judul, $penjelasan, $labelIsian
 $siapa = $p['pemohon_nama'];
 if ($bolehPutus) {
     dialogAksi('dlg-tolak', 'tolak', $p, 'Tolak izin ' . $siapa . '?', 'Pemohon akan diberi tahu beserta alasan ini.', 'Alasan penolakan', 'Tolak izin');
-}
-if ($bolehPta) {
-    dialogAksi('dlg-pta-setuju', 'pta_setuju', $p, 'Catat: KPTA menyetujui', 'Izin berlaku setelah dicatat dan Wakil diberi tahu.', 'Catatan (mis. nomor/tanggal jawaban)', 'Catat disetujui', 'btn-primary');
-    dialogAksi('dlg-pta-tolak', 'pta_tolak', $p, 'Catat: KPTA menolak', 'Permohonan ditutup sebagai ditolak.', 'Catatan', 'Catat ditolak');
 }
 if ($bolehBatal) {
     dialogAksi('dlg-batal', 'batalkan', $p, 'Batalkan permohonan ini?', 'Pejabat yang sedang memproses akan diberi tahu.', 'Alasan pembatalan', 'Batalkan permohonan');

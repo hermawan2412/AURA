@@ -39,7 +39,7 @@ Saran efisiensi lainnya: memakai provider WhatsApp yang sudah ada; menunda pengi
 
 Saran operasional: tetapkan pengelola utama/cadangan untuk kontak dan pejabat pengganti; susun prosedur izin lisan saat darurat dengan waktu kejadian dan waktu pencatatan yang terpisah; uji coba satu unit selama dua minggu. Pencatatan izin lisan belum termasuk perilaku yang disetujui, sehingga jangan menyediakan backdating tanpa kebijakan. Ukur waktu keputusan, kegagalan notifikasi, dan kebutuhan bantuan manual.
 
-Keputusan 16 November 2026 (rincian di bagian 2): pegawai boleh keluar setelah pemberi izin menyetujui; mengetahui hanya pemberitahuan; izin lisan berupa skema di balik saklar yang mati; template lama dengan TTD basah ditambah keterangan AURA; pengelola awal admin AURA; izin Ketua lewat KPTA. Diputuskan juga: jam kerja Senin–Kamis 08.00–16.30, Jumat 08.00–17.00 WITA; bila Ketua berhalangan, izin hakim dialihkan ke Wakil. Yang masih terbuka: penerimaan format di SIKEP. Claude dapat meneliti repo serta menyusun rencana sambil menandai pertanyaan ini, tanpa mengulang pilihan AURA versus RESTU.
+Keputusan 16 November 2026 (rincian di bagian 2): pegawai boleh keluar setelah pemberi izin menyetujui; mengetahui hanya pemberitahuan; izin lisan berupa skema di balik saklar yang mati; template lama dengan TTD basah ditambah keterangan AURA; pengelola awal admin AURA; izin Ketua di luar AURA (ruang lingkup hanya kantor). Diputuskan juga: jam kerja Senin–Kamis 08.00–16.30, Jumat 08.00–17.00 WITA; bila Ketua berhalangan, izin hakim dialihkan ke Wakil. Yang masih terbuka: penerimaan format di SIKEP. Claude dapat meneliti repo serta menyusun rencana sambil menandai pertanyaan ini, tanpa mengulang pilihan AURA versus RESTU.
 
 ## 1. Tujuan dan ukuran keberhasilan
 
@@ -68,7 +68,7 @@ Hasil yang diharapkan:
 - Jam kerja: Senin–Kamis 08.00–16.30, Jumat 08.00–17.00 WITA.
 - Ketua berhalangan: izin hakim dialihkan ke Wakil.
 - Pengelola data modul (pejabat berhalangan, nomor WA, pemetaan kelompok) default admin AURA; petugas lain bisa ditambahkan lewat `izin_petugas`.
-- Izin Ketua: Ketua mengajukan di AURA; surat varian hakim dengan pemberi izin teks “Ketua Pengadilan Tinggi Agama” (pihak eksternal, bukan pegawai AURA); status `diajukan_ke_pta`; Wakil menerima pemberitahuan. Setelah jawaban PTA, Ketua mencatat hasil (disetujui/ditolak KPTA) dengan catatan wajib dan audit; baru tampil di portal bila disetujui. Register/detail memberi label bahwa keputusan berasal dari PTA dan dicatat oleh pemohon.
+- Ruang lingkup hanya izin di lingkungan kantor (diputuskan pengguna 16 November 2026, menggantikan keputusan sebelumnya tentang izin Ketua lewat KPTA): izin Ketua tidak diproses AURA; pengajuan oleh Ketua ditolak dengan pesan. Status `diajukan_ke_pta` dan kolom `pemberi_eksternal` dihapus lewat migrasi 038.
 
 ### Arahan pimpinan dari percakapan
 
@@ -177,7 +177,7 @@ Pemetaan menggunakan kode kelompok eksplisit: `hakim`, `wakil`, `kepaniteraan`, 
 | Kepaniteraan/Kesekretariatan | Pemberi normal dan Wakil berhalangan | Ketua: setuju/tolak | Tidak ada |
 | Panitera/Sekretaris | Wakil tersedia | Wakil: setuju/tolak, usulan | Tidak ada |
 | Panitera/Sekretaris | Wakil berhalangan | Ketua: setuju/tolak, usulan | Tidak ada |
-| Ketua | Selalu | KPTA di luar AURA: status `diajukan_ke_pta`, Ketua mencatat hasil PTA | Wakil |
+| Ketua | Selalu | Tidak diproses AURA (di luar ruang lingkup) | — |
 | Kelompok tidak dipetakan | Belum ada kebijakan | Blokir submit, jelaskan konfigurasi belum lengkap | — |
 
 Tidak ada auto-approve bagi jabatan puncak. Tidak boleh menyetujui permohonan sendiri. Jika kandidat akhir kosong, nonaktif, tidak punya akun pegawai yang valid, atau sama dengan pemohon, blokir proses dan tampilkan alasan kepada pengelola; jangan melewati tahap diam-diam.
@@ -198,8 +198,7 @@ Pisahkan status permohonan dari status berkas agar kegagalan konversi PDF tidak 
 
 | Status permohonan | Aksi valid | Hasil |
 |---|---|---|
-| `draf` | Ubah / ajukan / batalkan oleh pemohon | `draf` / `menunggu_persetujuan` (Ketua: `diajukan_ke_pta`) / `dibatalkan` |
-| `diajukan_ke_pta` | Ketua mencatat hasil PTA dengan catatan; batalkan oleh Ketua | `disetujui` / `ditolak` / `dibatalkan` |
+| `draf` | Ubah / ajukan / batalkan oleh pemohon | `draf` / `menunggu_persetujuan` / `dibatalkan` |
 | `menunggu_persetujuan` | Setuju / tolak oleh pemberi; batalkan oleh pemohon | `disetujui` (sekaligus antre pemberitahuan mengetahui bila ada); `ditolak`; `dibatalkan` |
 | `disetujui` | Terbitkan/unduh berkas; cabut oleh pemberi sesuai kebijakan | Status tetap; atau `dicabut` |
 | `ditolak`, `dibatalkan`, `dicabut` | Lihat riwayat; salin sebagai draf baru | Permohonan lama tetap terminal |
@@ -361,7 +360,7 @@ Nomor migrasi berikutnya ditentukan dari repository AURA aktual. `036` adalah be
 | A05 | Pemberi normal dan Wakil berhalangan | Ketua menjadi pemberi; satu keputusan cukup |
 | A06 | Wakil berhalangan, pemberi normal hadir | Persetujuan Panitera/Sekretaris tetap berjalan; pemberitahuan ke Wakil tidak menghambat |
 | A07 | Ketua kosong/berhalangan, pemetaan ambigu | Tidak auto-approve atau fallback ke orang sembarang |
-| A07b | Ketua mengajukan | Surat ke KPTA, status `diajukan_ke_pta`, Wakil diberi tahu; hanya Ketua pemohon yang bisa mencatat hasil PTA; tampil di portal hanya setelah dicatat disetujui; label sumber keputusan PTA |
+| A07b | Ketua mengajukan | Ditolak dengan pesan; tidak ada permohonan tercatat |
 | A07c | Saklar izin lisan mati | Opsi tidak tampil; POST dengan waktu kejadian lampau ditolak server |
 | A08 | Pemohon memalsukan NIP, pejabat, kelompok, status POST | Ditolak atau diabaikan untuk field server; identitas/rute tetap server-side |
 | A09 | Admin/pengelola tanpa penugasan mencoba approve | Ditolak meskipun dapat membuka register |

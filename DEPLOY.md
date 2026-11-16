@@ -172,4 +172,5 @@ Rancangan: `docs/rancangan-izin-2026-11-16.md`, rencana: `docs/rencana-izin-v1.m
 7. Cron sinkron RESTU kini ikut membawa `no_telp` (grant SELECT tabel `restu.pegawai` yang ada sudah cukup).
 8. Data awal PA Rantau: `mysql aura < db/data_izin_pemetaan_parantau.sql` (pejabat + kelompok 32 pegawai; hasil harus 4 dan 32). Buat akun Panitera Pengganti PTA di Kelola Pengguna dengan memilih pegawainya. Lalu Admin > Pengaturan Izin: cek pemetaan, isi token Fonnte dan token portal; baru set mode `aktif`.
 9. Portal lokal: salin `izin.php` + `izin_config.php` (dari `izin_config.contoh.php`, isi token portal) + `index.html`.
-10. Rollback: set mode `pemeliharaan` (baca saja, jalur lama tetap tertutup). Jangan drop tabel `izin_*`.
+10. Migrasi `db/038_izin_tanpa_kpta.sql` (2026-11-16): membuang alur izin Ketua ke KPTA; berhenti sendiri bila masih ada baris berstatus `diajukan_ke_pta`.
+11. Rollback: set mode `pemeliharaan` (baca saja, jalur lama tetap tertutup). Jangan drop tabel `izin_*`.

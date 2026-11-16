@@ -54,7 +54,7 @@ if (isset($_GET['csv'])) {
     while ($p = $s->fetch()) {
         fputcsv($out, array_map($aman, array($p['id'], $p['nomor'], $p['tanggal'], substr($p['jam_mulai'], 0, 5), $p['jam_kembali'] ? substr($p['jam_kembali'], 0, 5) : '',
             Permohonan::LABEL_JENIS[$p['jenis']], $p['pemohon_nama'], $p['pemohon_nip'], $p['pemohon_jabatan'],
-            $p['pemberi_eksternal'] ?: $p['pemberi'], Permohonan::LABEL_STATUS[$p['status']], $p['diajukan_at'], $p['diputus_at'])), ',', '"', '');
+            $p['pemberi'], Permohonan::LABEL_STATUS[$p['status']], $p['diajukan_at'], $p['diputus_at'])), ',', '"', '');
     }
     exit;
 }
@@ -128,7 +128,7 @@ $jumlahHalaman = max(1, (int) ceil($total / 50));
             <td><a class="iz-utama" href="../izin/detail.php?id=<?php echo (int) $p['id']; ?>"><?php echo h(Formatter::tanggalIndonesia($p['tanggal'])); ?></a></td>
             <td><?php echo h($p['pemohon_nama']); ?></td>
             <td><?php echo h(ucfirst(Permohonan::LABEL_JENIS[$p['jenis']])); ?><br><span class="redup tnum"><?php echo h(str_replace(':', '.', substr($p['jam_mulai'], 0, 5)) . ($p['jam_kembali'] ? '–' . str_replace(':', '.', substr($p['jam_kembali'], 0, 5)) : '')); ?></span></td>
-            <td><?php echo h($p['pemberi_eksternal'] ?: $p['pemberi']); ?></td>
+            <td><?php echo h($p['pemberi']); ?></td>
             <td><?php echo h(Permohonan::LABEL_STATUS[$p['status']]); ?></td>
             <td class="tnum"><?php echo h($p['nomor']); ?></td>
             <td class="iz-panah"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></td>

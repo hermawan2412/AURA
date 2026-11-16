@@ -31,7 +31,6 @@ function badgeIzin($status)
     $kelas = array(
         'disetujui' => 'badge-aktif',
         'menunggu_persetujuan' => 'badge-segera',
-        'diajukan_ke_pta' => 'badge-segera',
         'ditolak' => 'badge-kedaluwarsa',
         'dicabut' => 'badge-kedaluwarsa',
     );

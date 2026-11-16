@@ -8,7 +8,7 @@ Rencana ini tidak memberi izin deployment. Semua pekerjaan dilakukan di lokal de
 
 - Satu persetujuan pemberi izin cukup. Mengetahui (Wakil) hanya menerima pemberitahuan, tanpa aksi.
 - Pegawai boleh keluar setelah status `disetujui`.
-- Izin Ketua: surat ke KPTA, status `diajukan_ke_pta`, Ketua mencatat hasil PTA, Wakil diberi tahu.
+- Ruang lingkup hanya lingkungan kantor: izin Ketua tidak diproses AURA (alur KPTA dihapus, migrasi 038).
 - Izin darurat/lisan: kolom dibuat, saklar `izin_lisan_aktif` default 0.
 - Surat memakai template `izin_keluar_kantor` yang ada; TTD basah tetap, ditambah keterangan “Disetujui melalui AURA pada …”.
 - Pengelola data: admin AURA.
@@ -56,7 +56,7 @@ Aditif, InnoDB, tanpa cascade delete.
 - `izin_pemetaan_pegawai`: `pegawai_id` unik, `kelompok` (`ketua/wakil/hakim/panitera/sekretaris/kepaniteraan/kesekretariatan`).
 - `izin_pejabat`: `kode` unik (`ketua/wakil/panitera/sekretaris`), `pegawai_id`.
 - `izin_berhalangan`: `pegawai_id`, `mulai`, `selesai`, `jenis` (`cuti/dinas_luar/lainnya`), catatan, pembuat, `dibatalkan_at`.
-- `izin_permohonan`: `kode` unik, pemohon user/pegawai, snapshot nama/NIP/jabatan/kelompok, `jenis` (`keluar_sementara/pulang_awal`), `tanggal`, `jam_mulai`, `jam_kembali` nullable, `alasan`, `status`, `versi`, `asal_permohonan_id`, snapshot mengetahui (user, nama, jabatan) nullable, `pemberi_eksternal` (teks KPTA) nullable, `lisan` + `waktu_kejadian` + `dicatat_oleh` (dipakai hanya bila saklar aktif), timestamp dibuat/diajukan/diputus.
+- `izin_permohonan`: `kode` unik, pemohon user/pegawai, snapshot nama/NIP/jabatan/kelompok, `jenis` (`keluar_sementara/pulang_awal`), `tanggal`, `jam_mulai`, `jam_kembali` nullable, `alasan`, `status`, `versi`, `asal_permohonan_id`, snapshot mengetahui (user, nama, jabatan) nullable, `lisan` + `waktu_kejadian` + `dicatat_oleh` (dipakai hanya bila saklar aktif), timestamp dibuat/diajukan/diputus.
 - `izin_tahap`: permohonan, pemberi user/pegawai, snapshot nama/jabatan, `status` (`menunggu/selesai/ditolak/diganti`), catatan, waktu, `diganti_dari`. Satu tahap `menunggu` per permohonan.
 - `izin_audit`: append-only.
 - `izin_notifikasi`: penerima, permohonan, peristiwa, pesan, `dibaca_at`; unik (peristiwa, penerima, permohonan).
@@ -68,7 +68,7 @@ Aditif, InnoDB, tanpa cascade delete.
 
 - `Routing.php`: fungsi murni `tentukan(kelompok, pejabat, berhalangan, pemohonPegawaiId)` → pemberi, mengetahui, atau error. Matriks bagian 8 rancangan. Tes: `tests/izin-routing.php`, semua baris matriks + Ketua + kasus kosong/sama dengan pemohon.
 - `Waktu.php`: validasi jenis/tanggal/jam terhadap jadwal, libur, zona; “Mulai sekarang” diisi server. Tes: `tests/izin-waktu.php`.
-- `Permohonan.php`: buat draf, ajukan, setujui, tolak, batalkan, cabut, catat hasil PTA, alihkan. Tiap aksi: transaksi → `SELECT … FOR UPDATE` → cek status/versi/aktor/akun aktif → tulis status + tahap + audit + notifikasi + outbox → commit. Cek bentrok interval dengan lock baris pegawai.
+- `Permohonan.php`: buat draf, ajukan, setujui, tolak, batalkan, cabut, alihkan. Tiap aksi: transaksi → `SELECT … FOR UPDATE` → cek status/versi/aktor/akun aktif → tulis status + tahap + audit + notifikasi + outbox → commit. Cek bentrok interval dengan lock baris pegawai.
 - `Dokumen.php`: snapshot nilai → `DocxGenerator::generate()` → `soffice` ke PDF di `storage/izin/` (di luar web root, atau ditolak Nginx) → hash → `siap`. Retry pakai snapshot dan nomor yang sama.
 - `Wa.php`: format nomor + kirim Fonnte (port kecil dari `restu/includes/whatsapp.php`), adapter palsu untuk tes.
 - Tes integrasi DB: `tests/izin-transisi.php` di `aura_local` (klik ganda, setuju vs batal, audit gagal → rollback, bentrok interval).
@@ -110,7 +110,7 @@ Pakai layout dan CSS AURA (`views/layout_atas.php`, `assets/css/style.css`).
 ## Fase 7 — Verifikasi
 
 - Jalankan semua `tests/izin-*.php` + tes lama.
-- Uji browser dengan akun sintetis: alur kepaniteraan, hakim, Ketua→KPTA, penolakan, pembatalan, pengalihan.
+- Uji browser dengan akun sintetis: alur kepaniteraan, hakim penolakan, pembatalan, pengalihan.
 - Contoh PDF pegawai dan hakim untuk ditinjau pengguna.
 - Review keamanan terarah: akses objek, unduhan, CSRF, jalur lama.
 - Laporan: selesai+diuji / belum diuji / asumsi / tindakan produksi yang belum dilakukan.

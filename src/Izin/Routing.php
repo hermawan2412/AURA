@@ -19,7 +19,7 @@ class Routing
      * @param array  $pejabat  kode => array('pegawai_id'=>int, 'user_aktif'=>bool); kode yang belum diisi tidak ada
      * @param int[]  $berhalangan pegawai_id yang sedang berhalangan saat submit
      * @param int    $pemohonPegawaiId
-     * @return array array('pemberi'=>kode|'pta', 'mengetahui'=>kode|null) atau array('error'=>pesan)
+     * @return array array('pemberi'=>kode, 'mengetahui'=>kode|null) atau array('error'=>pesan)
      */
     public static function tentukan($kelompok, array $pejabat, array $berhalangan, $pemohonPegawaiId)
     {
@@ -55,7 +55,8 @@ class Routing
 
         switch ($kelompok) {
             case 'ketua':
-                return array('pemberi' => 'pta', 'mengetahui' => $mengetahui('wakil'));
+                // Ruang lingkup modul hanya izin di lingkungan kantor (keputusan pengguna 2026-11-16).
+                return array('error' => 'Izin Ketua tidak diproses melalui AURA.');
 
             case 'hakim':
                 // Ketua berhalangan -> Wakil (keputusan pengguna 2026-11-16).

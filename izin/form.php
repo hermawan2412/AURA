@@ -3,7 +3,6 @@
 require __DIR__ . '/_umum.php';
 
 use Aurat\Csrf;
-use Aurat\Izin\Dokumen;
 use Aurat\Izin\IzinException;
 use Aurat\Izin\Permohonan;
 use Aurat\Izin\Routing;
@@ -26,9 +25,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'alasan' => $isian['alasan'],
             'asal_permohonan_id' => $isian['asal_permohonan_id'],
         ), sekarangUtc());
-        if (Permohonan::muat($db, $id)['status'] === 'diajukan_ke_pta') {
-            Dokumen::terbitkan($db, $id, sekarangUtc()); // surat ke KPTA dibutuhkan saat itu juga
-        }
         kilat('Permohonan terkirim. Pejabat sudah diberi tahu.');
         header('Location: detail.php?id=' . $id);
         exit;
@@ -66,9 +62,7 @@ $subJudul = 'Identitas dan pejabat tujuan diisi otomatis. Pejabat langsung diber
 require __DIR__ . '/../views/layout_atas.php';
 $tujuan = null;
 if ($rute && !isset($rute['error'])) {
-    $tujuan = $rute['pemberi'] === 'pta'
-        ? array('nama' => Permohonan::PEMBERI_PTA, 'jabatan' => 'Di luar AURA — surat dicetak untuk dikirim')
-        : $pejabat[$rute['pemberi']];
+    $tujuan = $pejabat[$rute['pemberi']];
 }
 ?>
 

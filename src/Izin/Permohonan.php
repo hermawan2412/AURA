@@ -17,13 +17,11 @@ use PDO;
  */
 class Permohonan
 {
-    const PEMBERI_PTA = 'Ketua Pengadilan Tinggi Agama Banjarmasin';
-    const STATUS_MEMBLOKIR = array('menunggu_persetujuan', 'diajukan_ke_pta', 'disetujui');
+    const STATUS_MEMBLOKIR = array('menunggu_persetujuan', 'disetujui');
     const LABEL_JENIS = array('keluar_sementara' => 'keluar sementara', 'pulang_awal' => 'pulang awal');
     const LABEL_STATUS = array(
         'draf' => 'Draf',
         'menunggu_persetujuan' => 'Menunggu persetujuan',
-        'diajukan_ke_pta' => 'Diajukan ke KPTA',
         'disetujui' => 'Disetujui',
         'ditolak' => 'Ditolak',
         'dibatalkan' => 'Dibatalkan',
@@ -176,37 +174,29 @@ class Permohonan
                 throw new IzinException($rute['error']);
             }
             $ketahui = $rute['mengetahui'] !== null ? $pejabat[$rute['mengetahui']] : null;
-            $kePta = $rute['pemberi'] === 'pta';
             $kini = self::utc($sekarang);
 
             $db->prepare(
                 'INSERT INTO izin_permohonan
                  (pemohon_user_id, pemohon_pegawai_id, pemohon_nama, pemohon_nip, pemohon_jabatan, pemohon_unit_kerja,
                   kelompok, zona_waktu, jenis, tanggal, jam_mulai, jam_kembali, jam_akhir, alasan, status,
-                  asal_permohonan_id, mengetahui_user_id, mengetahui_nama, mengetahui_jabatan, pemberi_eksternal,
+                  asal_permohonan_id, mengetahui_user_id, mengetahui_nama, mengetahui_jabatan,
                   dibuat_at, diajukan_at)
-                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
+                 VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)'
             )->execute(array(
                 $pem['user_id'], $pem['pegawai_id'], $pem['nama'], $pem['nip'], $pem['jabatan'], $pem['unit_kerja'],
                 $pem['kelompok'], $peng['zona_waktu'], $in['jenis'], $w['tanggal'], $w['jam_mulai'], $w['jam_kembali'], $w['jam_akhir'],
-                $alasan, $kePta ? 'diajukan_ke_pta' : 'menunggu_persetujuan',
+                $alasan, 'menunggu_persetujuan',
                 self::asalMilikSendiri($db, isset($in['asal_permohonan_id']) ? $in['asal_permohonan_id'] : null, $pem['user_id']),
                 $ketahui ? $ketahui['user_id'] : null, $ketahui ? $ketahui['nama'] : null, $ketahui ? $ketahui['jabatan'] : null,
-                $kePta ? self::PEMBERI_PTA : null,
                 $kini, $kini,
             ));
             $pid = (int) $db->lastInsertId();
             $p = self::muat($db, $pid);
 
-            if ($kePta) {
-                if ($ketahui) {
-                    self::beritahu($db, $peng, $ketahui['user_id'], $p, 'diajukan_pta', null, $sekarang);
-                }
-            } else {
-                $pb = $pejabat[$rute['pemberi']];
-                $tahapId = self::buatTahap($db, $pid, $pb, null, $kini);
-                self::beritahu($db, $peng, $pb['user_id'], $p, 'tugas_' . $tahapId, $tahapId, $sekarang);
-            }
+            $pb = $pejabat[$rute['pemberi']];
+            $tahapId = self::buatTahap($db, $pid, $pb, null, $kini);
+            self::beritahu($db, $peng, $pb['user_id'], $p, 'tugas_' . $tahapId, $tahapId, $sekarang);
             self::audit($db, $pid, $userId, 'ajukan', null, $p['status'], null, array('rute' => $rute), $sekarang);
             return $pid;
         });
@@ -261,7 +251,7 @@ class Permohonan
         $alasan = self::wajibTeks($alasan, 'Alasan pembatalan', 3);
 
         self::transaksi($db, function () use ($db, $peng, $userId, $id, $versi, $alasan, $sekarang) {
-            $p = self::kunci($db, $id, $versi, array('menunggu_persetujuan', 'diajukan_ke_pta'));
+            $p = self::kunci($db, $id, $versi, array('menunggu_persetujuan'));
             if ((int) $p['pemohon_user_id'] !== (int) $userId) {
                 throw new IzinException('Hanya pemohon yang dapat membatalkan permohonan ini.');
             }
@@ -281,7 +271,7 @@ class Permohonan
         });
     }
 
-    /** Pemberi izin (atau Ketua untuk izin via PTA) mencabut izin yang sudah disetujui. */
+    /** Pemberi izin mencabut izin yang sudah disetujui. */
     public static function cabut(PDO $db, $userId, $id, $versi, $alasan, DateTimeImmutable $sekarang)
     {
         $peng = self::pengaturan($db);
@@ -290,14 +280,9 @@ class Permohonan
 
         self::transaksi($db, function () use ($db, $peng, $userId, $id, $versi, $alasan, $sekarang) {
             $p = self::kunci($db, $id, $versi, array('disetujui'));
-            if ($p['pemberi_eksternal'] !== null) {
-                $boleh = (int) $p['pemohon_user_id'] === (int) $userId;
-            } else {
-                $s = $db->prepare('SELECT pemberi_user_id FROM izin_tahap WHERE permohonan_id = ? AND status = \'selesai\' ORDER BY id DESC LIMIT 1');
-                $s->execute(array($id));
-                $boleh = (int) $s->fetchColumn() === (int) $userId;
-            }
-            if (!$boleh) {
+            $s = $db->prepare('SELECT pemberi_user_id FROM izin_tahap WHERE permohonan_id = ? AND status = \'selesai\' ORDER BY id DESC LIMIT 1');
+            $s->execute(array($id));
+            if ((int) $s->fetchColumn() !== (int) $userId) {
                 throw new IzinException('Hanya pemberi izin yang dapat mencabut izin ini.');
             }
             self::ubahStatus($db, $p, 'dicabut', $userId, $alasan, self::utc($sekarang));
@@ -309,28 +294,6 @@ class Permohonan
                 self::beritahu($db, $peng, $p['mengetahui_user_id'], $p, 'dicabut', null, $sekarang);
             }
             self::audit($db, $id, $userId, 'cabut', 'disetujui', 'dicabut', $alasan, null, $sekarang);
-        });
-    }
-
-    /** Izin Ketua: Ketua mencatat jawaban KPTA. */
-    public static function catatHasilPta(PDO $db, $userId, $id, $versi, $disetujui, $catatan, DateTimeImmutable $sekarang)
-    {
-        $peng = self::pengaturan($db);
-        self::wajibAktif($peng);
-        $catatan = self::wajibTeks($catatan, 'Catatan hasil dari PTA (mis. nomor/tanggal jawaban)', 3);
-
-        self::transaksi($db, function () use ($db, $peng, $userId, $id, $versi, $disetujui, $catatan, $sekarang) {
-            $p = self::kunci($db, $id, $versi, array('diajukan_ke_pta'));
-            if ((int) $p['pemohon_user_id'] !== (int) $userId) {
-                throw new IzinException('Hanya pemohon (Ketua) yang dapat mencatat hasil dari PTA.');
-            }
-            $status = $disetujui ? 'disetujui' : 'ditolak';
-            self::ubahStatus($db, $p, $status, $userId, $catatan, self::utc($sekarang));
-            $p = self::muat($db, $id);
-            if ($p['mengetahui_user_id']) {
-                self::beritahu($db, $peng, $p['mengetahui_user_id'], $p, 'pta_' . $status, null, $sekarang);
-            }
-            self::audit($db, $id, $userId, 'catat_hasil_pta', 'diajukan_ke_pta', $status, $catatan, null, $sekarang);
         });
     }
 
@@ -387,14 +350,11 @@ class Permohonan
             return "$nama mengajukan izin $jenis $kapan. Mohon tinjau.";
         }
         $daftar = array(
-            'diajukan_pta' => "$nama mengajukan izin $jenis $kapan kepada KPTA.",
             'disetujui' => "Izin $jenis Anda $kapan disetujui.",
             'ditolak' => "Izin $jenis Anda $kapan ditolak.",
             'mengetahui' => "$nama mendapat izin $jenis $kapan.",
             'dibatalkan' => "$nama membatalkan permohonan izin $jenis $kapan.",
             'dicabut' => "Izin $jenis $nama $kapan dicabut.",
-            'pta_disetujui' => "Izin $jenis $nama $kapan disetujui KPTA.",
-            'pta_ditolak' => "Izin $jenis $nama $kapan ditolak KPTA.",
         );
         return $daftar[$peristiwa];
     }

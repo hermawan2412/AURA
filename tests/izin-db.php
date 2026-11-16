@@ -51,6 +51,11 @@ foreach (array('izin_wa_outbox', 'izin_notifikasi', 'izin_audit', 'izin_dokumen'
 }
 $db->exec('UPDATE izin_permohonan SET asal_permohonan_id = NULL');
 $db->exec('DELETE FROM izin_permohonan');
+// Kembalikan nama sintetis (tests/data-sintetis-izin.sql) supaya tes tidak bergantung pada isi DB lokal saat itu.
+$db->exec("UPDATE pegawai SET gelar_depan = NULL, gelar_belakang = NULL, status_aktif = 1, nama_lengkap = ELT(id, 'Uji Ketua', 'Uji Wakil', 'Uji Hakim Satu',
+    'Uji Hakim Dua', 'Uji Panitera', 'Uji Sekretaris', 'Uji Staf Kepaniteraan Satu', 'Uji Staf Kepaniteraan Dua', 'Uji Staf Sekretariat Satu',
+    'Uji Staf Sekretariat Dua') WHERE id BETWEEN 1 AND 10");
+$db->exec("UPDATE user_login u JOIN pegawai p ON p.nip = u.nip SET u.nama_tampilan = p.nama_lengkap, u.status_aktif = 1");
 $db->exec("UPDATE izin_pengaturan SET mode = 'aktif', wa_aktif = 1, zona_waktu = 'Asia/Makassar' WHERE id = 1");
 $db->exec("UPDATE pegawai SET no_telp = CASE WHEN id = 8 THEN NULL ELSE CONCAT('08123', LPAD(id, 6, '0')) END");
 $db->exec("INSERT INTO izin_pejabat (kode, pegawai_id) VALUES ('ketua',1),('wakil',2),('panitera',5),('sekretaris',6)");
