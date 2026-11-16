@@ -1,4 +1,5 @@
 <?php
+// Pola 2 — Detail / Record: satu permohonan izin.
 
 require __DIR__ . '/_umum.php';
 
@@ -15,13 +16,13 @@ if (!$p || !Permohonan::bolehLihat($db, $p, $userId, Auth::isAdmin())) {
 $id = (int) $p['id'];
 $tahap = Permohonan::tahap($db, $id);
 $aktif = null;
-$pemberiTerakhir = null;
+$putus = null; // tahap terakhir yang sudah diputus (selesai/ditolak)
 foreach ($tahap as $t) {
     if ($t['status'] === 'menunggu') {
         $aktif = $t;
     }
-    if ($t['status'] === 'selesai') {
-        $pemberiTerakhir = (int) $t['pemberi_user_id'];
+    if (in_array($t['status'], array('selesai', 'ditolak'), true)) {
+        $putus = $t;
     }
 }
 $dok = Dokumen::muat($db, $id);
@@ -36,12 +37,13 @@ $bolehPutus = $aktifMode && $aktif && (int) $aktif['pemberi_user_id'] === $userI
 $bolehBatal = $isPemohon && in_array($p['status'], array('menunggu_persetujuan', 'diajukan_ke_pta'), true);
 $bolehPta = $aktifMode && $isPemohon && $p['status'] === 'diajukan_ke_pta';
 $bolehCabut = $aktifMode && $p['status'] === 'disetujui'
-    && ($p['pemberi_eksternal'] !== null ? $isPemohon : $pemberiTerakhir === $userId);
+    && ($p['pemberi_eksternal'] !== null ? $isPemohon : ($putus && (int) $putus['pemberi_user_id'] === $userId));
 $bolehAlih = $aktifMode && $isAdmin && $p['status'] === 'menunggu_persetujuan';
+$bolehSalin = $aktifMode && $isPemohon && in_array($p['status'], array('ditolak', 'dibatalkan', 'dicabut'), true);
 
 $wa = array();
 if ($isPemohon || $isAdmin) {
-    $s = $db->prepare('SELECT o.status, o.error, o.peristiwa, u.nama_tampilan FROM izin_wa_outbox o JOIN user_login u ON u.id = o.penerima_user_id WHERE o.permohonan_id = ? ORDER BY o.id');
+    $s = $db->prepare('SELECT o.status, o.error, u.nama_tampilan FROM izin_wa_outbox o JOIN user_login u ON u.id = o.penerima_user_id WHERE o.permohonan_id = ? ORDER BY o.id');
     $s->execute(array($id));
     $wa = $s->fetchAll();
 }
@@ -49,131 +51,199 @@ if ($isPemohon || $isAdmin) {
 $kini = new DateTimeImmutable('now', new DateTimeZone($p['zona_waktu']));
 $jamLewat = in_array($p['status'], array('menunggu_persetujuan', 'diajukan_ke_pta'), true)
     && $kini->format('Y-m-d H:i:s') > $p['tanggal'] . ' ' . $p['jam_mulai'];
+$namaJenis = ucfirst(Permohonan::LABEL_JENIS[$p['jenis']]);
+$LABEL_AKSI = array('ajukan' => 'mengajukan', 'setujui' => 'menyetujui', 'tolak' => 'menolak', 'batalkan' => 'membatalkan',
+    'cabut' => 'mencabut', 'alihkan' => 'mengalihkan ke pejabat pengganti', 'catat_hasil_pta' => 'mencatat jawaban KPTA');
+
+// Ringkasan status di bagian atas panel.
+$zona = $p['zona_waktu'];
+switch ($p['status']) {
+    case 'disetujui':
+        $ringkas = array('ok', 'centang', 'Izin disetujui', $p['pemberi_eksternal']
+            ? 'Dicatat dari jawaban ' . $p['pemberi_eksternal'] . ' · ' . waktuKantor($p['diputus_at'], $zona)
+            : 'Oleh ' . ($putus ? $putus['pemberi_nama'] : '-') . ' · ' . waktuKantor($p['diputus_at'], $zona));
+        break;
+    case 'menunggu_persetujuan':
+        $ringkas = array('tunggu', 'jam', 'Menunggu keputusan', $aktif ? $aktif['pemberi_nama'] . ' (' . $aktif['pemberi_jabatan'] . ')' : '');
+        break;
+    case 'diajukan_ke_pta':
+        $ringkas = array('tunggu', 'jam', 'Diajukan ke KPTA', 'Menunggu jawaban ' . $p['pemberi_eksternal'] . '; hasil dicatat pemohon.');
+        break;
+    default:
+        $ringkas = array('stop', 'silang', Permohonan::LABEL_STATUS[$p['status']], waktuKantor($p['diputus_at'], $zona) . ($p['catatan_keputusan'] ? ' · ' . $p['catatan_keputusan'] : ''));
+}
+
+// Tombol utama di kepala halaman (aksi yang paling mungkin dilakukan peran ini).
+$tombol = '';
+if ($bolehPutus) {
+    $tombol .= '<button type="button" class="btn btn-secondary" data-buka="dlg-tolak">Tolak</button>'
+        . '<form method="post" action="aksi.php" style="margin:0">' . Csrf::field()
+        . '<input type="hidden" name="aksi" value="setujui"><input type="hidden" name="id" value="' . $id . '"><input type="hidden" name="versi" value="' . (int) $p['versi'] . '">'
+        . '<button type="submit" class="btn btn-primary">' . ikonIzin('centang', 18) . 'Setujui izin</button></form>';
+}
+if ($bolehPta) {
+    $tombol .= '<button type="button" class="btn btn-secondary" data-buka="dlg-pta-tolak">KPTA menolak</button>'
+        . '<button type="button" class="btn btn-primary" data-buka="dlg-pta-setuju">KPTA menyetujui</button>';
+}
+if ($dok && $dok['status'] === 'siap' && !$bolehPutus) {
+    $tombol .= '<a class="btn btn-primary" href="unduh.php?id=' . $id . '">' . ikonIzin('unduh', 18) . 'Unduh surat</a>';
+}
+if ($bolehSalin) {
+    $tombol .= '<a class="btn btn-secondary" href="form.php?salin=' . $id . '">Ajukan ulang</a>';
+}
 
 $halamanAktif = $bolehPutus ? 'izin_tugas' : 'izin';
-$judulHalaman = 'Izin ' . Permohonan::LABEL_JENIS[$p['jenis']];
+$judulHalaman = $p['pemohon_nama'];
 $breadcrumb = 'Izin · #' . $id;
+$aksiHalaman = $tombol;
 require __DIR__ . '/../views/layout_atas.php';
 
-function formAksi($aksi, $p, $label, $kelas, $isiTambahan = '')
+/** Dialog konfirmasi bernama untuk aksi yang butuh alasan. */
+function dialogAksi($idDialog, $aksi, array $p, $judul, $penjelasan, $labelIsian, $labelTombol, $kelasTombol = 'btn-bahaya')
 {
-    echo '<form method="post" action="aksi.php" style="margin-top:12px;">' . Csrf::field()
-        . '<input type="hidden" name="aksi" value="' . h($aksi) . '">'
-        . '<input type="hidden" name="id" value="' . (int) $p['id'] . '">'
-        . '<input type="hidden" name="versi" value="' . (int) $p['versi'] . '">'
-        . $isiTambahan
-        . '<button type="submit" class="btn ' . $kelas . '">' . h($label) . '</button></form>';
-}
-function isianAlasan($nama, $label, $wajib)
-{
-    return '<div class="field"><label for="' . h($nama) . '">' . h($label) . ($wajib ? ' <span class="req">*</span>' : '') . '</label>'
-        . '<textarea id="' . h($nama) . '" name="catatan" rows="2" maxlength="2000"' . ($wajib ? ' required minlength="3"' : '') . '></textarea></div>';
+    ?>
+    <dialog class="iz-dialog" id="<?php echo h($idDialog); ?>" aria-labelledby="<?php echo h($idDialog); ?>-judul">
+      <form method="post" action="aksi.php">
+        <?php echo Csrf::field(); ?>
+        <input type="hidden" name="aksi" value="<?php echo h($aksi); ?>">
+        <input type="hidden" name="id" value="<?php echo (int) $p['id']; ?>">
+        <input type="hidden" name="versi" value="<?php echo (int) $p['versi']; ?>">
+        <h2 id="<?php echo h($idDialog); ?>-judul"><?php echo h($judul); ?></h2>
+        <p><?php echo h($penjelasan); ?></p>
+        <div class="field">
+          <label for="<?php echo h($idDialog); ?>-isi"><?php echo h($labelIsian); ?> <span class="req">*</span></label>
+          <textarea id="<?php echo h($idDialog); ?>-isi" name="catatan" rows="3" required minlength="3" maxlength="2000"></textarea>
+        </div>
+        <div class="iz-tombol-bawah">
+          <button type="button" class="btn btn-secondary" data-tutup>Batal</button>
+          <button type="submit" class="btn <?php echo h($kelasTombol); ?>"><?php echo h($labelTombol); ?></button>
+        </div>
+      </form>
+    </dialog>
+    <?php
 }
 ?>
 
-<?php tampilKilat(); ?>
-<?php if ($p['status'] === 'dicabut'): ?>
-  <div class="alert alert-error">Izin ini sudah DICABUT. Surat yang pernah diunduh tidak berlaku.</div>
-<?php endif; ?>
-<?php if ($jamLewat): ?>
-  <div class="alert alert-error">Jam mulai yang dimohon telah lewat. Keputusan tetap dicatat dengan waktu sebenarnya.</div>
-<?php endif; ?>
-
-<div class="grid-2" style="max-width:980px; align-items:start;">
-  <div class="form-card">
-    <p style="margin-bottom:8px;"><?php echo badgeIzin($p['status']); ?></p>
-    <p><b><?php echo h($p['pemohon_nama']); ?></b><br><span class="redup"><?php echo h($p['pemohon_jabatan']); ?></span></p>
-    <p style="margin-top:10px;"><?php echo h(tanggalIzin($p)); ?>, <span class="tnum"><?php echo h(jamIzin($p)); ?></span></p>
-    <p style="margin-top:10px;"><span class="redup">Keperluan</span><br><?php echo nl2br(h($p['alasan'])); ?></p>
-    <?php if ($p['catatan_keputusan']): ?>
-      <p style="margin-top:10px;"><span class="redup">Catatan keputusan</span><br><?php echo nl2br(h($p['catatan_keputusan'])); ?></p>
-    <?php endif; ?>
-    <?php if ($p['mengetahui_nama']): ?>
-      <p class="redup" style="margin-top:10px;">Mengetahui (pemberitahuan): <?php echo h($p['mengetahui_nama']); ?></p>
-    <?php endif; ?>
-    <?php if ($p['pemberi_eksternal']): ?>
-      <p class="redup" style="margin-top:10px;">Pemberi izin: <?php echo h($p['pemberi_eksternal']); ?> (di luar AURA). Hasil dicatat oleh pemohon.</p>
-    <?php endif; ?>
-
-    <?php if ($bolehPutus): ?>
-      <?php formAksi('setujui', $p, 'Setujui', 'btn-primary btn-block'); ?>
-      <details style="margin-top:12px;"><summary>Tolak permohonan</summary>
-        <?php formAksi('tolak', $p, 'Tolak', 'btn-secondary', isianAlasan('alasan-tolak', 'Alasan penolakan', true)); ?>
-      </details>
-    <?php endif; ?>
-    <?php if ($bolehPta): ?>
-      <details open style="margin-top:12px;"><summary>Catat jawaban KPTA</summary>
-        <?php formAksi('pta_setuju', $p, 'KPTA menyetujui', 'btn-primary', isianAlasan('catatan-pta-ok', 'Catatan (mis. nomor/tanggal jawaban)', true)); ?>
-        <?php formAksi('pta_tolak', $p, 'KPTA menolak', 'btn-secondary', isianAlasan('catatan-pta-no', 'Catatan', true)); ?>
-      </details>
-    <?php endif; ?>
-    <?php if ($bolehBatal): ?>
-      <details style="margin-top:12px;"><summary>Batalkan permohonan</summary>
-        <?php formAksi('batalkan', $p, 'Batalkan', 'btn-secondary', isianAlasan('alasan-batal', 'Alasan pembatalan', true)); ?>
-      </details>
-    <?php endif; ?>
-    <?php if ($bolehCabut): ?>
-      <details style="margin-top:12px;"><summary>Cabut izin</summary>
-        <?php formAksi('cabut', $p, 'Cabut izin', 'btn-secondary', isianAlasan('alasan-cabut', 'Alasan pencabutan', true)); ?>
-      </details>
-    <?php endif; ?>
-    <?php if ($bolehAlih): ?>
-      <details style="margin-top:12px;"><summary>Alihkan ke pejabat pengganti (admin)</summary>
-        <p class="redup">Rute dihitung ulang dari data pejabat & berhalangan saat ini.</p>
-        <?php formAksi('alihkan', $p, 'Alihkan', 'btn-secondary', isianAlasan('alasan-alih', 'Alasan pengalihan', true)); ?>
-      </details>
-    <?php endif; ?>
-    <?php if ($isPemohon && in_array($p['status'], array('ditolak', 'dibatalkan', 'dicabut'), true) && $aktifMode): ?>
-      <a class="btn btn-secondary" style="margin-top:12px;" href="form.php?salin=<?php echo $id; ?>">Salin jadi permohonan baru</a>
-    <?php endif; ?>
+<div class="iz-page">
+  <div class="iz-kepala">
+    <div class="iz-meta">
+      <?php echo badgeIzin($p['status']); ?>
+      <span><?php echo h($namaJenis); ?></span>
+      <span><?php echo h(tanggalIzin($p)); ?>, <span class="tnum"><?php echo h(jamIzin($p)); ?></span></span>
+      <span><?php echo h($p['pemohon_jabatan']); ?></span>
+    </div>
   </div>
 
-  <div>
-    <div class="form-card">
-      <h2 style="font-family:var(--display); font-size:1rem; margin-bottom:10px;">Surat</h2>
-      <?php if (!$dok): ?>
-        <p class="redup"><?php echo $p['status'] === 'disetujui' ? 'Izin disetujui, surat sedang disiapkan.' : 'Surat tersedia setelah izin disetujui.'; ?></p>
-      <?php elseif ($dok['status'] === 'siap'): ?>
-        <p>Nomor register <?php echo h($dok['nomor']); ?></p>
-        <a class="btn btn-primary" style="margin-top:8px;" href="unduh.php?id=<?php echo $id; ?>">Unduh PDF</a>
-      <?php else: ?>
-        <p class="redup">Izin <?php echo h(strtolower(Permohonan::LABEL_STATUS[$p['status']])); ?>, surat <?php echo $dok['status'] === 'gagal' ? 'gagal dibuat' : 'sedang disiapkan'; ?>.</p>
+  <?php tampilKilat(); ?>
+  <?php if ($p['status'] === 'dicabut'): ?>
+    <div class="alert alert-error" role="alert">Izin ini sudah dicabut. Surat yang pernah diunduh tidak berlaku lagi.</div>
+  <?php endif; ?>
+  <?php if ($jamLewat): ?>
+    <div class="alert alert-error" role="alert">Jam mulai yang dimohon sudah lewat. Keputusan tetap dicatat dengan waktu sebenarnya.</div>
+  <?php endif; ?>
+
+  <div class="iz-panel iz-anim">
+    <div class="iz-status iz-status--<?php echo $ringkas[0]; ?>">
+      <span class="iz-status-ikon"><?php echo ikonIzin($ringkas[1]); ?></span>
+      <div><b><?php echo h($ringkas[2]); ?></b><span><?php echo h($ringkas[3]); ?></span></div>
+    </div>
+
+    <section class="iz-bagian" aria-labelledby="h-rincian">
+      <h2 id="h-rincian">Rincian</h2>
+      <dl class="iz-dl">
+        <dt>Pemohon</dt><dd><?php echo h($p['pemohon_nama']); ?><br><span class="redup">NIP <?php echo h($p['pemohon_nip']); ?></span></dd>
+        <dt>Jenis izin</dt><dd><?php echo h($namaJenis); ?></dd>
+        <dt>Waktu</dt><dd><?php echo h(tanggalIzin($p)); ?>, <span class="tnum"><?php echo h(jamIzin($p)); ?></span></dd>
+        <dt>Keperluan</dt><dd class="iz-teks"><?php echo nl2br(h($p['alasan'])); ?></dd>
+        <dt>Pemberi izin</dt><dd><?php echo h($p['pemberi_eksternal'] ?: ($putus ? $putus['pemberi_nama'] : ($aktif ? $aktif['pemberi_nama'] : '-'))); ?></dd>
+        <?php if ($p['mengetahui_nama']): ?>
+          <dt>Mengetahui</dt><dd><?php echo h($p['mengetahui_nama']); ?> <span class="redup">(pemberitahuan)</span></dd>
+        <?php endif; ?>
+        <?php if ($p['catatan_keputusan'] && $p['status'] === 'disetujui'): ?>
+          <dt>Catatan</dt><dd class="iz-teks"><?php echo nl2br(h($p['catatan_keputusan'])); ?></dd>
+        <?php endif; ?>
+      </dl>
+    </section>
+
+    <section class="iz-bagian" aria-labelledby="h-surat">
+      <h2 id="h-surat">Surat</h2>
+      <?php if ($dok && $dok['status'] === 'siap'): ?>
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+          <div style="display:flex; gap:12px; align-items:center;">
+            <span class="iz-status-ikon"><?php echo ikonIzin('dokumen'); ?></span>
+            <div>Nomor register <b class="tnum"><?php echo h($dok['nomor']); ?></b><br><span class="redup">PDF · tanda tangan basah pejabat tetap diperlukan</span></div>
+          </div>
+          <?php if ($bolehPutus): ?><a class="btn btn-secondary" href="unduh.php?id=<?php echo $id; ?>"><?php echo ikonIzin('unduh', 18); ?>Unduh PDF</a><?php endif; ?>
+        </div>
+      <?php elseif ($dok): ?>
+        <p class="redup"><?php echo $dok['status'] === 'gagal' ? 'Surat gagal dibuat. Keputusan tetap tersimpan.' : 'Izin sudah diputus, surat sedang disiapkan.'; ?></p>
         <?php if ($isAdmin): ?>
           <?php if ($dok['error']): ?><p class="redup"><?php echo h($dok['error']); ?></p><?php endif; ?>
-          <?php formAksi('buat_ulang_surat', $p, 'Buat ulang surat', 'btn-secondary'); ?>
+          <form method="post" action="aksi.php" style="margin-top:8px;"><?php echo Csrf::field(); ?>
+            <input type="hidden" name="aksi" value="buat_ulang_surat"><input type="hidden" name="id" value="<?php echo $id; ?>"><input type="hidden" name="versi" value="<?php echo (int) $p['versi']; ?>">
+            <button type="submit" class="btn btn-secondary btn-kecil">Buat ulang surat</button></form>
         <?php endif; ?>
+      <?php else: ?>
+        <p class="redup"><?php echo $p['status'] === 'disetujui' ? 'Izin disetujui, surat sedang disiapkan.' : 'Surat tersedia setelah izin disetujui.'; ?></p>
       <?php endif; ?>
-    </div>
+    </section>
 
-    <div class="form-card" style="margin-top:16px;">
-      <h2 style="font-family:var(--display); font-size:1rem; margin-bottom:10px;">Riwayat</h2>
-      <ul style="list-style:none; padding:0; margin:0;">
+    <section class="iz-bagian" aria-labelledby="h-riwayat">
+      <h2 id="h-riwayat">Riwayat</h2>
+      <ol class="iz-waktu">
         <?php foreach ($riwayat as $r): ?>
-          <li style="padding:5px 0; border-bottom:1px solid var(--border);">
-            <span class="redup"><?php echo h(waktuKantor($r['dibuat_at'], $p['zona_waktu'])); ?></span><br>
-            <?php echo h($r['aktor_nama']); ?> — <?php echo h(str_replace('_', ' ', $r['aksi'])); ?>
-            <?php if ($r['alasan']): ?><br><span class="redup"><?php echo h($r['alasan']); ?></span><?php endif; ?>
-          </li>
+          <li><small><?php echo h(waktuKantor($r['dibuat_at'], $zona)); ?></small>
+            <?php echo h($r['aktor_nama']); ?> <span class="redup"><?php echo h(isset($LABEL_AKSI[$r['aksi']]) ? $LABEL_AKSI[$r['aksi']] : str_replace('_', ' ', $r['aksi'])); ?></span>
+            <?php if ($r['alasan']): ?><br><span class="redup"><?php echo h($r['alasan']); ?></span><?php endif; ?></li>
         <?php endforeach; ?>
         <?php if ($aktif): ?>
-          <li style="padding:5px 0;">Menunggu keputusan <?php echo h($aktif['pemberi_nama']); ?></li>
+          <li class="iz-kini"><small>Sekarang</small>Menunggu keputusan <?php echo h($aktif['pemberi_nama']); ?></li>
         <?php endif; ?>
-      </ul>
-    </div>
+      </ol>
+    </section>
 
     <?php if ($wa): ?>
-    <div class="form-card" style="margin-top:16px;">
-      <h2 style="font-family:var(--display); font-size:1rem; margin-bottom:10px;">WhatsApp</h2>
-      <ul style="list-style:none; padding:0; margin:0;">
-        <?php $labelWa = array('antre' => 'dalam antrean', 'terkirim' => 'diterima Fonnte', 'gagal' => 'gagal', 'dibatalkan' => 'dibatalkan (tidak relevan lagi)'); ?>
+    <section class="iz-bagian" aria-labelledby="h-wa">
+      <h2 id="h-wa">Pemberitahuan WhatsApp</h2>
+      <?php $labelWa = array('antre' => 'Dalam antrean', 'terkirim' => 'Diterima Fonnte', 'gagal' => 'Gagal', 'dibatalkan' => 'Tidak dikirim (tidak relevan lagi)'); ?>
+      <ul class="iz-wa">
         <?php foreach ($wa as $w): ?>
-          <li class="redup" style="padding:3px 0;"><?php echo h($w['nama_tampilan']); ?>: <?php echo h($labelWa[$w['status']]); ?><?php echo $w['status'] === 'gagal' && $w['error'] ? ' — ' . h($w['error']) : ''; ?></li>
+          <li><span><?php echo h($w['nama_tampilan']); ?></span><span class="redup"><?php echo h($labelWa[$w['status']]); ?><?php echo $w['status'] === 'gagal' && $w['error'] ? ' — ' . h($w['error']) : ''; ?></span></li>
         <?php endforeach; ?>
       </ul>
-      <p class="redup" style="margin-top:8px;">Bila WA gagal atau mendesak, hubungi pejabat langsung. Keputusan tetap dicatat di AURA.</p>
-    </div>
+      <p class="redup" style="margin-top:12px;">Bila WhatsApp gagal atau sangat mendesak, hubungi pejabat langsung. Keputusan tetap dicatat di AURA.</p>
+    </section>
+    <?php endif; ?>
+
+    <?php if ($bolehBatal || $bolehCabut || $bolehAlih): ?>
+    <section class="iz-bagian" aria-labelledby="h-lain">
+      <h2 id="h-lain">Tindakan lain</h2>
+      <div class="iz-aksi">
+        <?php if ($bolehAlih): ?><button type="button" class="btn btn-secondary btn-kecil" data-buka="dlg-alih">Alihkan ke pejabat pengganti</button><?php endif; ?>
+        <?php if ($bolehBatal): ?><button type="button" class="btn btn-secondary btn-kecil" data-buka="dlg-batal">Batalkan permohonan</button><?php endif; ?>
+        <?php if ($bolehCabut): ?><button type="button" class="btn btn-secondary btn-kecil" data-buka="dlg-cabut">Cabut izin</button><?php endif; ?>
+      </div>
+    </section>
     <?php endif; ?>
   </div>
 </div>
 
-<?php require __DIR__ . '/../views/layout_bawah.php'; ?>
+<?php
+$siapa = $p['pemohon_nama'];
+if ($bolehPutus) {
+    dialogAksi('dlg-tolak', 'tolak', $p, 'Tolak izin ' . $siapa . '?', 'Pemohon akan diberi tahu beserta alasan ini.', 'Alasan penolakan', 'Tolak izin');
+}
+if ($bolehPta) {
+    dialogAksi('dlg-pta-setuju', 'pta_setuju', $p, 'Catat: KPTA menyetujui', 'Izin berlaku setelah dicatat dan Wakil diberi tahu.', 'Catatan (mis. nomor/tanggal jawaban)', 'Catat disetujui', 'btn-primary');
+    dialogAksi('dlg-pta-tolak', 'pta_tolak', $p, 'Catat: KPTA menolak', 'Permohonan ditutup sebagai ditolak.', 'Catatan', 'Catat ditolak');
+}
+if ($bolehBatal) {
+    dialogAksi('dlg-batal', 'batalkan', $p, 'Batalkan permohonan ini?', 'Pejabat yang sedang memproses akan diberi tahu.', 'Alasan pembatalan', 'Batalkan permohonan');
+}
+if ($bolehCabut) {
+    dialogAksi('dlg-cabut', 'cabut', $p, 'Cabut izin ' . $siapa . '?', 'Izin tidak berlaku lagi dan hilang dari kotak hijau portal. Pemohon diberi tahu.', 'Alasan pencabutan', 'Cabut izin');
+}
+if ($bolehAlih) {
+    dialogAksi('dlg-alih', 'alihkan', $p, 'Alihkan permohonan ' . $siapa . '?', 'Rute dihitung ulang dari data pejabat dan pejabat berhalangan saat ini. Pejabat lama kehilangan hak memutus.', 'Alasan pengalihan', 'Alihkan', 'btn-primary');
+}
+require __DIR__ . '/../views/layout_bawah.php';

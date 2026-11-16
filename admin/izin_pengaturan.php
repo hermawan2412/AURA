@@ -177,150 +177,171 @@ $lokal = function ($utc) use ($tzKantor) {
 };
 $tanpaPemetaan = count(array_filter($pegawai, function ($p) { return $p['user_id'] && !$p['kelompok']; }));
 
+// Pola 5 — Settings: navigasi bagian (sticky) + bagian bergaris pemisah dalam satu panel.
 $halamanAktif = 'admin_izin_pengaturan';
 $judulHalaman = 'Pengaturan Izin';
 $breadcrumb = 'Izin';
 $subJudul = 'Pejabat, kelompok pegawai, jam kerja, pejabat berhalangan, dan WhatsApp untuk modul izin.';
 $rootAsset = '../';
+$cssTambahan = 'assets/css/izin.css';
+$jsTambahan = 'assets/js/izin.js';
 require __DIR__ . '/../views/layout_atas.php';
 $kilat = isset($_SESSION['izin_kilat']) ? $_SESSION['izin_kilat'] : null;
 unset($_SESSION['izin_kilat']);
+$LABEL_MODE = array('nonaktif' => 'Nonaktif — jalur surat lama', 'aktif' => 'Aktif', 'pemeliharaan' => 'Pemeliharaan — hanya baca');
 ?>
 
-<?php if ($galat !== ''): ?><div class="alert alert-error" role="alert"><?php echo h($galat); ?></div><?php endif; ?>
-<?php if ($kilat): ?><div class="alert alert-info" role="status"><?php echo h($kilat[0]); ?></div><?php endif; ?>
-<?php if ($perluAlih): ?>
-  <div class="alert alert-error">Permohonan menunggu pejabat yang sedang berhalangan — buka lalu pilih “Alihkan”:
-    <?php foreach ($perluAlih as $a): ?><a href="../izin/detail.php?id=<?php echo (int) $a['id']; ?>">#<?php echo (int) $a['id']; ?> <?php echo h($a['pemohon_nama']); ?> (ke <?php echo h($a['pemberi_nama']); ?>)</a> <?php endforeach; ?>
-  </div>
-<?php endif; ?>
+<div class="iz-atur">
+  <nav class="iz-atur-nav" aria-label="Bagian pengaturan">
+    <a href="#umum">Status &amp; WhatsApp</a>
+    <a href="#pejabat">Pejabat</a>
+    <a href="#berhalangan">Pejabat berhalangan</a>
+    <a href="#jadwal">Jam kerja &amp; libur</a>
+    <a href="#pemetaan">Kelompok pegawai</a>
+  </nav>
 
-<div class="form-card" id="umum" style="max-width:640px;">
-  <h2 style="font-family:var(--display); font-size:1rem; margin-bottom:12px;">Status modul &amp; WhatsApp</h2>
-  <form method="post">
-    <?php echo Csrf::field(); ?><input type="hidden" name="bagian" value="umum">
-    <div class="grid-2">
-      <div class="field"><label for="mode">Mode</label>
-        <select id="mode" name="mode">
-          <?php foreach (array('nonaktif' => 'Nonaktif (jalur surat lama)', 'aktif' => 'Aktif', 'pemeliharaan' => 'Pemeliharaan (baca saja)') as $k => $v): ?>
-            <option value="<?php echo $k; ?>" <?php echo $peng['mode'] === $k ? 'selected' : ''; ?>><?php echo h($v); ?></option>
-          <?php endforeach; ?>
-        </select></div>
-      <div class="field"><label for="zona">Zona waktu kantor</label>
-        <input id="zona" name="zona_waktu" value="<?php echo h($peng['zona_waktu']); ?>"></div>
-    </div>
-    <p class="redup">Mode aktif/pemeliharaan menutup pembuatan surat izin lewat menu surat lama.</p>
-    <div class="field"><label><input type="checkbox" name="wa_aktif" value="1" <?php echo $peng['wa_aktif'] ? 'checked' : ''; ?>> Kirim WhatsApp (Fonnte)</label></div>
-    <div class="field"><label for="wa_token">Token Fonnte <?php echo $peng['wa_token'] ? '(tersimpan — kosongkan bila tidak diganti)' : ''; ?></label>
-      <input id="wa_token" name="wa_token" type="password" autocomplete="off"></div>
-    <div class="field"><label><input type="checkbox" name="izin_lisan_aktif" value="1" <?php echo $peng['izin_lisan_aktif'] ? 'checked' : ''; ?>> Izin darurat/lisan (belum dipakai di v1)</label></div>
-    <div class="field"><label><input type="checkbox" name="token_portal_baru" value="1"> Buat token portal baru</label>
-      <p class="redup">Token portal: <?php echo $peng['token_portal'] ? '<code>' . h($peng['token_portal']) . '</code> — salin ke konfigurasi portal' : 'belum ada'; ?></p></div>
-    <button class="btn btn-primary" type="submit">Simpan</button>
-  </form>
-</div>
-
-<div class="form-card" id="pejabat" style="max-width:640px; margin-top:20px;">
-  <h2 style="font-family:var(--display); font-size:1rem; margin-bottom:12px;">Pejabat</h2>
-  <form method="post">
-    <?php echo Csrf::field(); ?><input type="hidden" name="bagian" value="pejabat">
-    <?php foreach ($JABATAN as $k => $label): ?>
-      <div class="field"><label for="pj-<?php echo $k; ?>"><?php echo h($label); ?></label>
-        <select id="pj-<?php echo $k; ?>" name="pejabat[<?php echo $k; ?>]">
-          <option value="0">— belum diisi —</option>
-          <?php foreach ($pegawai as $p): ?>
-            <option value="<?php echo (int) $p['id']; ?>" <?php echo isset($pejabat[$k]) && (int) $pejabat[$k]['pegawai_id'] === (int) $p['id'] ? 'selected' : ''; ?>><?php echo h(Formatter::namaBergelar($p)); ?><?php echo $p['user_id'] ? '' : ' (tanpa akun)'; ?></option>
-          <?php endforeach; ?>
-        </select></div>
-    <?php endforeach; ?>
-    <button class="btn btn-primary" type="submit">Simpan pejabat</button>
-  </form>
-</div>
-
-<div class="form-card" id="berhalangan" style="max-width:640px; margin-top:20px;">
-  <h2 style="font-family:var(--display); font-size:1rem; margin-bottom:12px;">Pejabat berhalangan</h2>
-  <?php if ($berhalangan): ?>
-    <ul style="list-style:none; padding:0; margin:0 0 12px;">
-      <?php foreach ($berhalangan as $b): ?>
-        <li style="padding:4px 0;"><?php echo h($b['nama_lengkap']); ?> — <?php echo h(str_replace('_', ' ', $b['jenis'])); ?>, <?php echo h($lokal($b['mulai'])); ?> s.d. <?php echo h($lokal($b['selesai'])); ?>
-          <form method="post" style="display:inline;"><?php echo Csrf::field(); ?><input type="hidden" name="bagian" value="berhalangan_batal"><input type="hidden" name="id" value="<?php echo (int) $b['id']; ?>"><button class="btn btn-secondary" type="submit">Batalkan</button></form></li>
-      <?php endforeach; ?>
-    </ul>
-  <?php endif; ?>
-  <form method="post">
-    <?php echo Csrf::field(); ?><input type="hidden" name="bagian" value="berhalangan_tambah">
-    <div class="field"><label for="bh-pegawai">Pejabat</label>
-      <select id="bh-pegawai" name="pegawai_id" required>
-        <?php foreach ($pejabat as $k => $pj): ?><option value="<?php echo (int) $pj['pegawai_id']; ?>"><?php echo h($JABATAN[$k] . ' — ' . $pj['nama']); ?></option><?php endforeach; ?>
-      </select></div>
-    <div class="grid-2">
-      <div class="field"><label for="bh-mulai">Mulai</label><input id="bh-mulai" type="datetime-local" name="mulai" required></div>
-      <div class="field"><label for="bh-selesai">Selesai</label><input id="bh-selesai" type="datetime-local" name="selesai" required></div>
-    </div>
-    <div class="grid-2">
-      <div class="field"><label for="bh-jenis">Jenis</label><select id="bh-jenis" name="jenis"><option value="cuti">Cuti</option><option value="dinas_luar">Dinas luar</option><option value="lainnya">Lainnya</option></select></div>
-      <div class="field"><label for="bh-catatan">Catatan</label><input id="bh-catatan" name="catatan" maxlength="255"></div>
-    </div>
-    <button class="btn btn-primary" type="submit">Catat berhalangan</button>
-  </form>
-</div>
-
-<div class="form-card" id="jadwal" style="max-width:640px; margin-top:20px;">
-  <h2 style="font-family:var(--display); font-size:1rem; margin-bottom:12px;">Jam kerja</h2>
-  <p class="redup" style="margin-bottom:10px;">Kosongkan kedua jam untuk hari libur. Pastikan sesuai jam kerja resmi sebelum modul diaktifkan.</p>
-  <form method="post">
-    <?php echo Csrf::field(); ?><input type="hidden" name="bagian" value="jadwal">
-    <?php foreach ($HARI as $n => $label): ?>
-      <div class="grid-3" style="align-items:end;">
-        <div class="field"><span><?php echo h($label); ?></span></div>
-        <div class="field"><label for="jm-<?php echo $n; ?>">Masuk</label><input id="jm-<?php echo $n; ?>" type="time" name="mulai[<?php echo $n; ?>]" value="<?php echo isset($jadwal[$n]) ? h($jadwal[$n]['mulai']) : ''; ?>"></div>
-        <div class="field"><label for="js-<?php echo $n; ?>">Pulang</label><input id="js-<?php echo $n; ?>" type="time" name="selesai[<?php echo $n; ?>]" value="<?php echo isset($jadwal[$n]) ? h($jadwal[$n]['selesai']) : ''; ?>"></div>
+  <div>
+    <?php if ($galat !== ''): ?><div class="alert alert-error" role="alert"><?php echo h($galat); ?></div><?php endif; ?>
+    <?php if ($kilat): ?><div class="alert alert-info" role="status"><?php echo h($kilat[0]); ?></div><?php endif; ?>
+    <?php if ($perluAlih): ?>
+      <div class="alert alert-error" role="alert">Ada permohonan yang menunggu pejabat yang sedang berhalangan. Buka lalu pilih “Alihkan”:
+        <?php foreach ($perluAlih as $a): ?><a href="../izin/detail.php?id=<?php echo (int) $a['id']; ?>">#<?php echo (int) $a['id']; ?> <?php echo h($a['pemohon_nama']); ?> (ke <?php echo h($a['pemberi_nama']); ?>)</a> <?php endforeach; ?>
       </div>
-    <?php endforeach; ?>
-    <button class="btn btn-primary" type="submit">Simpan jam kerja</button>
-  </form>
+    <?php endif; ?>
 
-  <h3 style="font-size:.95rem; margin:20px 0 8px;">Hari libur</h3>
-  <ul style="list-style:none; padding:0; margin:0 0 12px;">
-    <?php foreach ($libur as $l): ?>
-      <li style="padding:3px 0;"><?php echo h(Formatter::tanggalIndonesia($l['tanggal'])); ?> — <?php echo h($l['keterangan']); ?>
-        <form method="post" style="display:inline;"><?php echo Csrf::field(); ?><input type="hidden" name="bagian" value="libur_hapus"><input type="hidden" name="tanggal" value="<?php echo h($l['tanggal']); ?>"><button class="btn btn-secondary" type="submit">Hapus</button></form></li>
-    <?php endforeach; ?>
-  </ul>
-  <form method="post" class="grid-3" style="align-items:end;">
-    <?php echo Csrf::field(); ?><input type="hidden" name="bagian" value="libur_tambah">
-    <div class="field"><label for="lb-tgl">Tanggal</label><input id="lb-tgl" type="date" name="tanggal" required></div>
-    <div class="field"><label for="lb-ket">Keterangan</label><input id="lb-ket" name="keterangan" required maxlength="150"></div>
-    <div class="field"><button class="btn btn-secondary" type="submit">Tambah libur</button></div>
-  </form>
-</div>
+    <div class="iz-panel iz-anim">
+      <section class="iz-bagian" id="umum" aria-labelledby="h-umum">
+        <h2 id="h-umum">Status modul &amp; WhatsApp</h2>
+        <p>Mode aktif atau pemeliharaan menutup pembuatan surat izin lewat menu surat lama. Mode aktif butuh keempat pejabat terisi.</p>
+        <form method="post">
+          <?php echo Csrf::field(); ?><input type="hidden" name="bagian" value="umum">
+          <div class="grid-2">
+            <div class="field"><label for="mode">Mode</label>
+              <select id="mode" name="mode">
+                <?php foreach ($LABEL_MODE as $k => $v): ?><option value="<?php echo $k; ?>" <?php echo $peng['mode'] === $k ? 'selected' : ''; ?>><?php echo h($v); ?></option><?php endforeach; ?>
+              </select></div>
+            <div class="field"><label for="zona">Zona waktu kantor</label><input id="zona" name="zona_waktu" value="<?php echo h($peng['zona_waktu']); ?>"></div>
+          </div>
+          <label class="iz-saklar" for="wa-aktif"><span><b>Kirim WhatsApp</b><span>Lewat Fonnte, tiap menit oleh cron</span></span>
+            <input type="checkbox" role="switch" id="wa-aktif" name="wa_aktif" value="1" <?php echo $peng['wa_aktif'] ? 'checked' : ''; ?>></label>
+          <div class="field"><label for="wa_token">Token Fonnte <span class="iz-opsional"><?php echo $peng['wa_token'] ? '(tersimpan — kosongkan bila tidak diganti)' : '(belum diisi)'; ?></span></label>
+            <input id="wa_token" name="wa_token" type="password" autocomplete="off"></div>
+          <label class="iz-saklar" for="lisan"><span><b>Izin darurat/lisan</b><span>Disiapkan untuk kebijakan nanti; belum dipakai di versi ini</span></span>
+            <input type="checkbox" role="switch" id="lisan" name="izin_lisan_aktif" value="1" <?php echo $peng['izin_lisan_aktif'] ? 'checked' : ''; ?>></label>
+          <label class="iz-saklar" for="token-baru"><span><b>Buat token portal baru</b><span><?php echo $peng['token_portal'] ? 'Token sekarang: <code>' . h($peng['token_portal']) . '</code> — salin ke izin_config.php portal' : 'Belum ada token portal'; ?></span></span>
+            <input type="checkbox" role="switch" id="token-baru" name="token_portal_baru" value="1"></label>
+          <div class="iz-tombol-bawah"><button class="btn btn-primary" type="submit">Simpan</button></div>
+        </form>
+      </section>
 
-<div class="form-card" id="pemetaan" style="max-width:980px; margin-top:20px;">
-  <h2 style="font-family:var(--display); font-size:1rem; margin-bottom:12px;">Kelompok pegawai</h2>
-  <p class="redup" style="margin-bottom:10px;">Menentukan rute persetujuan. <?php echo $tanpaPemetaan ? $tanpaPemetaan . ' pegawai berakun belum dipetakan dan belum bisa mengajukan izin.' : 'Semua pegawai berakun sudah dipetakan.'; ?></p>
-  <form method="post">
-    <?php echo Csrf::field(); ?><input type="hidden" name="bagian" value="pemetaan">
-    <div class="table-wrap">
-      <table>
-        <thead><tr><th>Pegawai</th><th>Jabatan</th><th>Akun</th><th>No. WA</th><th>Kelompok</th></tr></thead>
-        <tbody>
-        <?php foreach ($pegawai as $p): ?>
-          <tr>
-            <td><?php echo h(Formatter::namaBergelar($p)); ?></td>
-            <td><?php echo h($p['jabatan']); ?></td>
-            <td><?php echo $p['user_id'] ? 'Ada' : '<span class="redup">Tidak ada</span>'; ?></td>
-            <td><?php echo $p['no_telp'] ? 'Ada' : '<span class="redup">Kosong</span>'; ?></td>
-            <td><select name="kelompok[<?php echo (int) $p['id']; ?>]" aria-label="Kelompok <?php echo h($p['nama_lengkap']); ?>">
-              <option value="">— belum —</option>
-              <?php foreach (Routing::KELOMPOK as $k): ?><option value="<?php echo $k; ?>" <?php echo $p['kelompok'] === $k ? 'selected' : ''; ?>><?php echo h(ucfirst($k)); ?></option><?php endforeach; ?>
-            </select></td>
-          </tr>
-        <?php endforeach; ?>
-        </tbody>
-      </table>
+      <section class="iz-bagian" id="pejabat" aria-labelledby="h-pejabat">
+        <h2 id="h-pejabat">Pejabat</h2>
+        <p>Menentukan siapa yang memberi izin. Pejabat harus punya akun aktif.</p>
+        <form method="post">
+          <?php echo Csrf::field(); ?><input type="hidden" name="bagian" value="pejabat">
+          <div class="grid-2">
+          <?php foreach ($JABATAN as $k => $label): ?>
+            <div class="field"><label for="pj-<?php echo $k; ?>"><?php echo h($label); ?></label>
+              <select id="pj-<?php echo $k; ?>" name="pejabat[<?php echo $k; ?>]">
+                <option value="0">— belum diisi —</option>
+                <?php foreach ($pegawai as $p): ?>
+                  <option value="<?php echo (int) $p['id']; ?>" <?php echo isset($pejabat[$k]) && (int) $pejabat[$k]['pegawai_id'] === (int) $p['id'] ? 'selected' : ''; ?>><?php echo h(Formatter::namaBergelar($p)); ?><?php echo $p['user_id'] ? '' : ' (tanpa akun)'; ?></option>
+                <?php endforeach; ?>
+              </select></div>
+          <?php endforeach; ?>
+          </div>
+          <div class="iz-tombol-bawah"><button class="btn btn-primary" type="submit">Simpan pejabat</button></div>
+        </form>
+      </section>
+
+      <section class="iz-bagian" id="berhalangan" aria-labelledby="h-berhalangan">
+        <h2 id="h-berhalangan">Pejabat berhalangan</h2>
+        <p>Selama berhalangan, pengajuan baru dialihkan otomatis: Panitera/Sekretaris → Wakil → Ketua; Ketua → Wakil untuk izin hakim.</p>
+        <?php if ($berhalangan): ?>
+          <ul class="iz-daftar-ringkas">
+            <?php foreach ($berhalangan as $b): ?>
+              <li><span><b><?php echo h($b['nama_lengkap']); ?></b> <span class="redup"><?php echo h(str_replace('_', ' ', $b['jenis'])); ?> · <?php echo h($lokal($b['mulai'])); ?> s.d. <?php echo h($lokal($b['selesai'])); ?></span></span>
+                <form method="post" style="margin:0;"><?php echo Csrf::field(); ?><input type="hidden" name="bagian" value="berhalangan_batal"><input type="hidden" name="id" value="<?php echo (int) $b['id']; ?>"><button class="btn btn-secondary btn-kecil" type="submit">Batalkan</button></form></li>
+            <?php endforeach; ?>
+          </ul>
+        <?php endif; ?>
+        <form method="post">
+          <?php echo Csrf::field(); ?><input type="hidden" name="bagian" value="berhalangan_tambah">
+          <div class="grid-2">
+            <div class="field"><label for="bh-pegawai">Pejabat</label>
+              <select id="bh-pegawai" name="pegawai_id" required>
+                <?php foreach ($pejabat as $k => $pj): ?><option value="<?php echo (int) $pj['pegawai_id']; ?>"><?php echo h($JABATAN[$k] . ' — ' . $pj['nama']); ?></option><?php endforeach; ?>
+              </select></div>
+            <div class="field"><label for="bh-jenis">Jenis</label><select id="bh-jenis" name="jenis"><option value="cuti">Cuti</option><option value="dinas_luar">Dinas luar</option><option value="lainnya">Lainnya</option></select></div>
+            <div class="field"><label for="bh-mulai">Mulai</label><input id="bh-mulai" type="datetime-local" name="mulai" required></div>
+            <div class="field"><label for="bh-selesai">Selesai</label><input id="bh-selesai" type="datetime-local" name="selesai" required></div>
+          </div>
+          <div class="field"><label for="bh-catatan">Catatan <span class="iz-opsional">(opsional)</span></label><input id="bh-catatan" name="catatan" maxlength="255"></div>
+          <div class="iz-tombol-bawah"><button class="btn btn-primary" type="submit">Catat berhalangan</button></div>
+        </form>
+      </section>
+
+      <section class="iz-bagian" id="jadwal" aria-labelledby="h-jadwal">
+        <h2 id="h-jadwal">Jam kerja &amp; libur</h2>
+        <p>Kosongkan kedua jam untuk hari libur. Izin hanya bisa diajukan di dalam jam kerja.</p>
+        <form method="post">
+          <?php echo Csrf::field(); ?><input type="hidden" name="bagian" value="jadwal">
+          <div class="iz-baris-jam redup" aria-hidden="true"><span></span><span>Masuk</span><span>Pulang</span></div>
+          <?php foreach ($HARI as $n => $label): ?>
+            <div class="iz-baris-jam">
+              <span><?php echo h($label); ?></span>
+              <input type="time" name="mulai[<?php echo $n; ?>]" aria-label="Jam masuk <?php echo h($label); ?>" value="<?php echo isset($jadwal[$n]) ? h($jadwal[$n]['mulai']) : ''; ?>">
+              <input type="time" name="selesai[<?php echo $n; ?>]" aria-label="Jam pulang <?php echo h($label); ?>" value="<?php echo isset($jadwal[$n]) ? h($jadwal[$n]['selesai']) : ''; ?>">
+            </div>
+          <?php endforeach; ?>
+          <div class="iz-tombol-bawah"><button class="btn btn-primary" type="submit">Simpan jam kerja</button></div>
+        </form>
+
+        <h3 style="font-size:.95rem; margin:24px 0 12px;">Hari libur</h3>
+        <?php if ($libur): ?>
+          <ul class="iz-daftar-ringkas">
+            <?php foreach ($libur as $l): ?>
+              <li><span><?php echo h(Formatter::tanggalIndonesia($l['tanggal'])); ?> <span class="redup">— <?php echo h($l['keterangan']); ?></span></span>
+                <form method="post" style="margin:0;"><?php echo Csrf::field(); ?><input type="hidden" name="bagian" value="libur_hapus"><input type="hidden" name="tanggal" value="<?php echo h($l['tanggal']); ?>"><button class="btn btn-secondary btn-kecil" type="submit">Hapus</button></form></li>
+            <?php endforeach; ?>
+          </ul>
+        <?php else: ?><p class="redup" style="margin:0 0 12px;">Belum ada hari libur tercatat.</p><?php endif; ?>
+        <form method="post" class="grid-2" style="align-items:end;">
+          <?php echo Csrf::field(); ?><input type="hidden" name="bagian" value="libur_tambah">
+          <div class="field"><label for="lb-tgl">Tanggal</label><input id="lb-tgl" type="date" name="tanggal" required></div>
+          <div class="field"><label for="lb-ket">Keterangan</label><input id="lb-ket" name="keterangan" required maxlength="150"></div>
+          <div class="iz-tombol-bawah" style="grid-column:1/-1;"><button class="btn btn-secondary" type="submit">Tambah hari libur</button></div>
+        </form>
+      </section>
+
+      <section class="iz-bagian" id="pemetaan" aria-labelledby="h-pemetaan">
+        <h2 id="h-pemetaan">Kelompok pegawai</h2>
+        <p>Menentukan rute persetujuan. <?php echo $tanpaPemetaan ? '<b>' . $tanpaPemetaan . ' pegawai berakun belum dipetakan</b> dan belum bisa mengajukan izin.' : 'Semua pegawai berakun sudah dipetakan.'; ?></p>
+        <form method="post">
+          <?php echo Csrf::field(); ?><input type="hidden" name="bagian" value="pemetaan">
+          <div class="iz-gulir" style="border:1px solid var(--border); border-radius:var(--r-md);">
+            <table class="iz-tabel">
+              <thead><tr><th>Pegawai</th><th>Akun</th><th>No. WA</th><th>Kelompok</th></tr></thead>
+              <tbody>
+              <?php foreach ($pegawai as $i => $p): ?>
+                <tr style="--i:<?php echo $i; ?>">
+                  <td><?php echo h(Formatter::namaBergelar($p)); ?><br><span class="redup"><?php echo h($p['jabatan']); ?></span></td>
+                  <td><?php echo $p['user_id'] ? 'Ada' : '<span class="redup">Tidak ada</span>'; ?></td>
+                  <td><?php echo $p['no_telp'] ? 'Ada' : '<span class="redup">Kosong</span>'; ?></td>
+                  <td><div class="field" style="margin:0;"><select name="kelompok[<?php echo (int) $p['id']; ?>]" aria-label="Kelompok <?php echo h($p['nama_lengkap']); ?>">
+                    <option value="">— belum —</option>
+                    <?php foreach (Routing::KELOMPOK as $k): ?><option value="<?php echo $k; ?>" <?php echo $p['kelompok'] === $k ? 'selected' : ''; ?>><?php echo h(ucfirst($k)); ?></option><?php endforeach; ?>
+                  </select></div></td>
+                </tr>
+              <?php endforeach; ?>
+              </tbody>
+            </table>
+          </div>
+          <div class="iz-tombol-bawah"><button class="btn btn-primary" type="submit">Simpan kelompok</button></div>
+        </form>
+      </section>
     </div>
-    <button class="btn btn-primary" type="submit" style="margin-top:12px;">Simpan kelompok</button>
-  </form>
+  </div>
 </div>
 
 <?php require __DIR__ . '/../views/layout_bawah.php'; ?>

@@ -50,6 +50,7 @@ foreach (JenisSuratRepository::semua(true) as $js) {
 <title><?php echo htmlspecialchars((string) $judulHalaman); ?> — <?php echo htmlspecialchars(Pengaturan::namaAplikasi()); ?></title>
 <link rel="icon" type="image/png" href="<?php echo isset($rootAsset) ? $rootAsset : ''; ?>assets/img/favicon.png">
 <link rel="stylesheet" href="<?php echo isset($rootAsset) ? $rootAsset : ''; ?>assets/css/style.css">
+<?php if (!empty($cssTambahan)): ?><link rel="stylesheet" href="<?php echo isset($rootAsset) ? $rootAsset : ''; ?><?php echo htmlspecialchars((string) $cssTambahan); ?>"><?php endif; ?>
 <script>(function(){try{var m=localStorage.getItem('aura-theme');if(m==='light'||m==='dark')document.documentElement.setAttribute('data-theme',m);}catch(e){}})();</script>
 </head>
 <body>
@@ -102,7 +103,7 @@ foreach (JenisSuratRepository::semua(true) as $js) {
       <div class="sidebar-footer-row">
         <div class="sidebar-user">
           <b><?php echo htmlspecialchars(Auth::namaTampilan()); ?></b>
-          <span>Administrator Kepegawaian</span>
+          <span><?php echo htmlspecialchars(array('admin' => 'Administrator', 'pengelola' => 'Pengelola Surat', 'pengguna' => 'Pegawai')[(string) Auth::peran()] ?? ''); ?></span>
         </div>
         <button type="button" class="theme-toggle" data-mode="auto" title="Tema" aria-label="Ganti tema">
           <svg class="icon-auto" width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
@@ -126,8 +127,10 @@ foreach (JenisSuratRepository::semua(true) as $js) {
   </aside>
 
   <main class="main">
-    <div class="topbar">
+    <div class="topbar"<?php if (!empty($aksiHalaman)): ?> style="display:flex; justify-content:space-between; align-items:flex-end; gap:16px; flex-wrap:wrap;"<?php endif; ?>>
+      <?php if (!empty($aksiHalaman)): ?><div><?php endif; ?>
       <?php if (!empty($breadcrumb)): ?><div class="crumb"><?php echo htmlspecialchars((string) $breadcrumb); ?></div><?php endif; ?>
       <h1><?php echo htmlspecialchars((string) $judulHalaman); ?></h1>
       <?php if (!empty($subJudul)): ?><p><?php echo htmlspecialchars((string) $subJudul); ?></p><?php endif; ?>
+      <?php if (!empty($aksiHalaman)): ?></div><div class="iz-aksi"><?php echo $aksiHalaman; /* HTML dari halaman pemanggil, sudah di-escape di sana */ ?></div><?php endif; ?>
     </div>

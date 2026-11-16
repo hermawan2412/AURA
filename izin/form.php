@@ -58,84 +58,81 @@ try {
 $hariIni = (new DateTimeImmutable('now', new DateTimeZone($peng['zona_waktu'])))->format('Y-m-d');
 $bisaKirim = $peng['mode'] === 'aktif' && $rute !== null && !isset($rute['error']);
 
+// Pola 3 — Form (halaman): kolom sempit, label di atas isian.
 $halamanAktif = 'izin';
 $judulHalaman = 'Ajukan Izin';
 $breadcrumb = 'Izin';
+$subJudul = 'Identitas dan pejabat tujuan diisi otomatis. Pejabat langsung diberi tahu lewat WhatsApp.';
 require __DIR__ . '/../views/layout_atas.php';
+$tujuan = null;
+if ($rute && !isset($rute['error'])) {
+    $tujuan = $rute['pemberi'] === 'pta'
+        ? array('nama' => Permohonan::PEMBERI_PTA, 'jabatan' => 'Di luar AURA — surat dicetak untuk dikirim')
+        : $pejabat[$rute['pemberi']];
+}
 ?>
 
-<?php if ($galat !== ''): ?><div class="alert alert-error" role="alert"><?php echo h($galat); ?></div><?php endif; ?>
-<?php if ($peng['mode'] !== 'aktif'): ?><div class="alert alert-error">Modul izin belum aktif atau sedang pemeliharaan.</div><?php endif; ?>
+<div class="iz-page iz-page--sempit">
+  <?php if ($galat !== ''): ?><div class="alert alert-error" role="alert"><?php echo h($galat); ?></div><?php endif; ?>
+  <?php if ($peng['mode'] !== 'aktif'): ?><div class="alert alert-error" role="alert">Modul izin belum aktif atau sedang pemeliharaan.</div><?php endif; ?>
 
-<div class="form-card" style="max-width:560px;">
-  <?php if ($pem): ?>
-    <p class="redup" style="margin-bottom:12px;"><b><?php echo h($pem['nama']); ?></b> · NIP <?php echo h($pem['nip']); ?><br><?php echo h($pem['jabatan']); ?></p>
-  <?php endif; ?>
-
-  <?php if (isset($rute['error'])): ?>
-    <div class="alert alert-error"><?php echo h($rute['error']); ?></div>
-  <?php elseif ($rute): ?>
-    <div class="alert alert-info">
-      Diajukan kepada: <b><?php echo $rute['pemberi'] === 'pta' ? h(Permohonan::PEMBERI_PTA) . '</b> (di luar AURA; surat dicetak untuk dikirim)' : h($pejabat[$rute['pemberi']]['nama']) . '</b> (' . h($pejabat[$rute['pemberi']]['jabatan']) . ')'; ?>
-      <?php if ($rute['mengetahui']): ?><br>Pemberitahuan kepada: <?php echo h($pejabat[$rute['mengetahui']]['nama']); ?> (mengetahui)<?php endif; ?>
-    </div>
-  <?php endif; ?>
-
-  <form method="post" action="form.php" id="form-izin">
-    <?php echo Csrf::field(); ?>
-    <input type="hidden" name="asal_permohonan_id" value="<?php echo h($isian['asal_permohonan_id']); ?>">
-
-    <fieldset class="field" style="border:0; padding:0;">
-      <legend>Jenis izin <span class="req">*</span></legend>
-      <label><input type="radio" name="jenis" value="keluar_sementara" <?php echo $isian['jenis'] === 'keluar_sementara' ? 'checked' : ''; ?>> Keluar sementara (kembali ke kantor)</label><br>
-      <label><input type="radio" name="jenis" value="pulang_awal" <?php echo $isian['jenis'] === 'pulang_awal' ? 'checked' : ''; ?>> Pulang sebelum waktunya</label>
-    </fieldset>
-
-    <div class="field">
-      <label><input type="checkbox" name="mulai_sekarang" value="1" id="mulai-sekarang" <?php echo $isian['mulai_sekarang'] === '1' ? 'checked' : ''; ?>> Mulai sekarang</label>
-      <p class="redup">Jam mulai dicatat saat permohonan dikirim.</p>
-    </div>
-
-    <div class="grid-2" id="blok-waktu-manual">
-      <div class="field">
-        <label for="tanggal">Tanggal</label>
-        <input type="date" id="tanggal" name="tanggal" min="<?php echo h($hariIni); ?>" value="<?php echo h($isian['tanggal'] !== '' ? $isian['tanggal'] : $hariIni); ?>">
+  <div class="iz-anim">
+    <?php if (isset($rute['error'])): ?>
+      <div class="alert alert-error" role="alert"><?php echo h($rute['error']); ?></div>
+    <?php elseif ($tujuan): ?>
+      <div class="iz-rute">
+        <span class="iz-inisial" aria-hidden="true"><?php echo h(inisial($tujuan['nama'])); ?></span>
+        <div><small>Diajukan kepada</small><b><?php echo h($tujuan['nama']); ?></b> <span class="redup"><?php echo h($tujuan['jabatan']); ?></span>
+          <?php if ($rute['mengetahui']): ?><small>Pemberitahuan juga ke <?php echo h($pejabat[$rute['mengetahui']]['nama']); ?> (mengetahui)</small><?php endif; ?></div>
       </div>
-      <div class="field">
-        <label for="jam_mulai">Jam mulai</label>
-        <input type="time" id="jam_mulai" name="jam_mulai" value="<?php echo h($isian['jam_mulai']); ?>">
+    <?php endif; ?>
+
+    <form method="post" action="form.php" id="form-izin" class="iz-panel iz-bagian">
+      <?php echo Csrf::field(); ?>
+      <input type="hidden" name="asal_permohonan_id" value="<?php echo h($isian['asal_permohonan_id']); ?>">
+      <?php if ($pem): ?>
+        <p class="redup" style="margin:0 0 16px;">Pemohon: <b style="color:var(--ink)"><?php echo h($pem['nama']); ?></b> · <?php echo h($pem['jabatan']); ?></p>
+      <?php endif; ?>
+
+      <fieldset class="iz-pilihan">
+        <legend>Jenis izin <span class="req">*</span></legend>
+        <label><input type="radio" name="jenis" value="keluar_sementara" <?php echo $isian['jenis'] === 'keluar_sementara' ? 'checked' : ''; ?>><b>Keluar sementara</b><span>Kembali ke kantor di hari yang sama</span></label>
+        <label><input type="radio" name="jenis" value="pulang_awal" <?php echo $isian['jenis'] === 'pulang_awal' ? 'checked' : ''; ?>><b>Pulang awal</b><span>Pulang sebelum jam kerja berakhir</span></label>
+      </fieldset>
+
+      <label class="iz-saklar" for="mulai-sekarang">
+        <span><b>Mulai sekarang</b><span>Jam mulai dicatat saat permohonan dikirim</span></span>
+        <input type="checkbox" role="switch" name="mulai_sekarang" value="1" id="mulai-sekarang" <?php echo $isian['mulai_sekarang'] === '1' ? 'checked' : ''; ?>>
+      </label>
+
+      <div class="grid-2" id="blok-waktu-manual">
+        <div class="field">
+          <label for="tanggal">Tanggal <span class="req">*</span></label>
+          <input type="date" id="tanggal" name="tanggal" min="<?php echo h($hariIni); ?>" value="<?php echo h($isian['tanggal'] !== '' ? $isian['tanggal'] : $hariIni); ?>">
+        </div>
+        <div class="field">
+          <label for="jam_mulai">Jam mulai <span class="req">*</span></label>
+          <input type="time" id="jam_mulai" name="jam_mulai" value="<?php echo h($isian['jam_mulai']); ?>">
+        </div>
       </div>
-    </div>
 
-    <div class="field" id="blok-jam-kembali">
-      <label for="jam_kembali">Rencana jam kembali <span class="req">*</span></label>
-      <input type="time" id="jam_kembali" name="jam_kembali" value="<?php echo h($isian['jam_kembali']); ?>">
-    </div>
+      <div class="field" id="blok-jam-kembali">
+        <label for="jam_kembali">Rencana jam kembali <span class="req">*</span></label>
+        <input type="time" id="jam_kembali" name="jam_kembali" value="<?php echo h($isian['jam_kembali']); ?>">
+      </div>
 
-    <div class="field">
-      <label for="alasan">Keperluan <span class="req">*</span></label>
-      <textarea id="alasan" name="alasan" rows="3" minlength="10" maxlength="2000" required><?php echo h($isian['alasan']); ?></textarea>
-      <p class="redup">Hanya terlihat oleh Anda, pejabat terkait, dan admin. Tidak dikirim lewat WhatsApp.</p>
-    </div>
+      <div class="field">
+        <label for="alasan">Keperluan <span class="req">*</span></label>
+        <textarea id="alasan" name="alasan" rows="3" minlength="10" maxlength="2000" required aria-describedby="alasan-bantu"><?php echo h($isian['alasan']); ?></textarea>
+        <span class="redup" id="alasan-bantu">Hanya terlihat oleh Anda, pejabat terkait, dan admin. Tidak dikirim lewat WhatsApp.</span>
+      </div>
 
-    <button type="submit" class="btn btn-primary btn-block" <?php echo $bisaKirim ? '' : 'disabled'; ?>>Kirim permohonan</button>
-  </form>
+      <div class="iz-tombol-bawah">
+        <a class="btn btn-secondary" href="index.php">Batal</a>
+        <button type="submit" class="btn btn-primary" <?php echo $bisaKirim ? '' : 'disabled'; ?>>Kirim permohonan</button>
+      </div>
+    </form>
+  </div>
 </div>
-
-<script>
-(function () {
-  var f = document.getElementById('form-izin');
-  function atur() {
-    var sekarang = document.getElementById('mulai-sekarang').checked;
-    var keluar = f.querySelector('input[name=jenis]:checked').value === 'keluar_sementara';
-    document.getElementById('blok-waktu-manual').hidden = sekarang;
-    document.getElementById('blok-jam-kembali').hidden = !keluar;
-    document.getElementById('jam_kembali').required = keluar;
-    document.getElementById('jam_mulai').required = !sekarang;
-  }
-  f.addEventListener('change', atur);
-  atur();
-})();
-</script>
 
 <?php require __DIR__ . '/../views/layout_bawah.php'; ?>
