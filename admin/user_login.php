@@ -42,14 +42,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $namaTampilan  = isset($_POST['nama_tampilan']) ? trim($_POST['nama_tampilan']) : '';
         $password      = isset($_POST['password']) ? $_POST['password'] : '';
         $peran         = isset($_POST['peran']) ? $_POST['peran'] : 'pengguna';
+        // Opsional: tautkan ke data pegawai (NIP) - wajib untuk pegawai yang mengajukan izin
+        // di modul izin tapi tidak punya akun RESTU (mis. Panitera Pengganti PTA).
+        $pegawaiId     = isset($_POST['pegawai_id']) ? (int) $_POST['pegawai_id'] : 0;
+        $nip           = null;
+        if ($pegawaiId > 0) {
+            $cari = $pdo->prepare('SELECT p.nip FROM pegawai p WHERE p.id = ? AND p.status_aktif = 1 AND NOT EXISTS (SELECT 1 FROM user_login u WHERE u.nip = p.nip)');
+            $cari->execute(array($pegawaiId));
+            $nip = $cari->fetchColumn() ?: null;
+        }
 
-        if (!auratUsernameValid($username) || $namaTampilan === '' || $password === '' || !auratPeranValid($peran)) {
+        if ($pegawaiId > 0 && $nip === null) {
+            $pesan = 'Pegawai tersebut tidak aktif atau sudah punya akun.';
+            $pesanTipe = 'error';
+        } elseif (!auratUsernameValid($username) || $namaTampilan === '' || $password === '' || !auratPeranValid($peran)) {
             $pesan = 'Nama pengguna (huruf/angka/titik/underscore, diawali huruf), Nama Tampilan, dan Kata Sandi wajib diisi dengan benar.';
             $pesanTipe = 'error';
         } else {
-            $stmt = $pdo->prepare('INSERT INTO user_login (username, password_hash, nama_tampilan, peran) VALUES (?, ?, ?, ?)');
+            $stmt = $pdo->prepare('INSERT INTO user_login (username, nip, password_hash, nama_tampilan, peran) VALUES (?, ?, ?, ?, ?)');
             try {
-                $stmt->execute(array($username, password_hash($password, PASSWORD_DEFAULT), $namaTampilan, $peran));
+                $stmt->execute(array($username, $nip, password_hash($password, PASSWORD_DEFAULT), $namaTampilan, $peran));
                 header('Location: user_login.php');
                 exit;
             } catch (\PDOException $e) {
@@ -141,6 +153,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $daftarUser = $pdo->query('SELECT * FROM user_login ORDER BY username')->fetchAll();
+$pegawaiTanpaAkun = $pdo->query('SELECT p.id, p.nama_lengkap, p.jabatan FROM pegawai p WHERE p.status_aktif = 1 AND NOT EXISTS (SELECT 1 FROM user_login u WHERE u.nip = p.nip) ORDER BY p.nama_lengkap')->fetchAll();
 
 $halamanAktif = 'admin_user_login';
 $judulHalaman = 'Kelola Pengguna';
@@ -179,9 +192,18 @@ require __DIR__ . '/../views/layout_atas.php';
       </div>
     </div>
     <div class="field">
+      <label for="pegawai_id">Pegawai <span style="color:var(--ink-dim)">(opsional — wajib bila akun ini dipakai mengajukan izin)</span></label>
+      <select id="pegawai_id" name="pegawai_id">
+        <option value="0">— tidak ditautkan —</option>
+        <?php foreach ($pegawaiTanpaAkun as $pg): ?>
+          <option value="<?php echo (int) $pg['id']; ?>"><?php echo htmlspecialchars($pg['nama_lengkap'] . ' — ' . $pg['jabatan']); ?></option>
+        <?php endforeach; ?>
+      </select>
+    </div>
+    <div class="field">
       <label>Peran</label>
       <select name="peran">
-        <option value="pengguna">Pengguna (hanya Surat Izin Keluar Kantor)</option>
+        <option value="pengguna">Pengguna (hanya Izin Keluar)</option>
         <option value="pengelola">Pengelola (semua fungsi kecuali Kelola Pengguna &amp; Pengaturan)</option>
         <option value="admin">Administrator (akses penuh)</option>
       </select>

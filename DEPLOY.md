@@ -170,6 +170,6 @@ Rancangan: `docs/rancangan-izin-2026-11-16.md`, rencana: `docs/rencana-izin-v1.m
 5. Nginx: whitelist PHP baru `izin/{index,form,detail,tugas,aksi,unduh}.php`, `admin/izin_{pengaturan,register}.php`, `api/izin_hari_ini.php`. JANGAN buka `izin/_umum.php`, `cron/`, `storage/`, `_arsip_pra_migrasi/` (berisi generator surat lama yang tidak ikut dijaga penutupan jalur izin).
 6. Cron tiap menit (user aplikasi): `* * * * * php /var/www/aura/cron/izin_wa.php`.
 7. Cron sinkron RESTU kini ikut membawa `no_telp` (grant SELECT tabel `restu.pegawai` yang ada sudah cukup).
-8. Admin > Pengaturan Izin: isi pejabat, kelompok pegawai, jam kerja resmi, token Fonnte, token portal; baru set mode `aktif`.
+8. Data awal PA Rantau: `mysql aura < db/data_izin_pemetaan_parantau.sql` (pejabat + kelompok 32 pegawai; hasil harus 4 dan 32). Buat akun Panitera Pengganti PTA di Kelola Pengguna dengan memilih pegawainya. Lalu Admin > Pengaturan Izin: cek pemetaan, isi token Fonnte dan token portal; baru set mode `aktif`.
 9. Portal lokal: salin `izin.php` + `izin_config.php` (dari `izin_config.contoh.php`, isi token portal) + `index.html`.
 10. Rollback: set mode `pemeliharaan` (baca saja, jalur lama tetap tertutup). Jangan drop tabel `izin_*`.
