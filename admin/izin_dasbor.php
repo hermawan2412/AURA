@@ -10,8 +10,15 @@ use Aurat\Formatter;
 use Aurat\Izin\Dokumen;
 use Aurat\Izin\Permohonan;
 
-Auth::requireAdmin();
+Auth::requireLogin();
 $db = Database::pdo();
+$userId = (int) $_SESSION['user_id'];
+$isAdmin = Auth::isAdmin();
+// Admin, atau 4 pejabat (Ketua/Wakil/Panitera/Sekretaris) yang tercatat saat ini. Pejabat tidak melihat bagian teknis.
+if (!$isAdmin && !Permohonan::pejabatAktif($db, $userId)) {
+    http_response_code(403);
+    exit('Dasbor Izin hanya untuk admin dan pejabat (Ketua, Wakil, Panitera, Sekretaris).');
+}
 $peng = Permohonan::pengaturan($db);
 $tz = new DateTimeZone($peng['zona_waktu']);
 $utc = new DateTimeZone('UTC');
@@ -63,7 +70,18 @@ $tanpaKelompok = (int) $q("SELECT COUNT(*) FROM pegawai p JOIN user_login u ON u
                            LEFT JOIN izin_pemetaan_pegawai m ON m.pegawai_id = p.id WHERE p.status_aktif = 1 AND m.pegawai_id IS NULL")->fetchColumn();
 $tanpaNomor = (int) $q("SELECT COUNT(*) FROM izin_pemetaan_pegawai m JOIN pegawai p ON p.id = m.pegawai_id
                         WHERE p.status_aktif = 1 AND (p.no_telp IS NULL OR p.no_telp = '')")->fetchColumn();
+if (!$isAdmin) { // hal teknis/pengaturan hanya untuk admin
+    $waGagal = $suratGagal = array();
+    $tanpaKelompok = $tanpaNomor = 0;
+}
 $jumlahMasalah = count($lama) + count($waGagal) + count($suratGagal) + count($halangan) + ($tanpaKelompok ? 1 : 0) + ($tanpaNomor ? 1 : 0);
+// Nama pemohon hanya jadi tautan bila pengguna berhak membuka detailnya (alasan izin tetap privat).
+$tautan = function ($id, $teks) use ($db, $userId, $isAdmin) {
+    $p = Permohonan::muat($db, $id);
+    return $p && Permohonan::bolehLihat($db, $p, $userId, $isAdmin)
+        ? '<a href="../izin/detail.php?id=' . (int) $id . '">' . h($teks) . '</a>'
+        : '<b>' . h($teks) . '</b>';
+};
 
 // ---------- Bulan ini ----------
 $perStatus = $q("SELECT status, COUNT(*) FROM izin_permohonan WHERE tanggal BETWEEN ? AND ? GROUP BY status", array($awalBulan, $lokal->format('Y-m-t')))->fetchAll(PDO::FETCH_KEY_PAIR);
@@ -110,15 +128,15 @@ function ikonStatus($baik)
 
 <div class="iz-page iz-dasbor">
   <?php if ($peng['mode'] !== 'aktif'): ?>
-    <div class="alert alert-error" role="alert">Modul izin dalam mode <b><?php echo h($LABEL_MODE[$peng['mode']]); ?></b> — pegawai belum bisa mengajukan izin. <a href="izin_pengaturan.php#umum">Buka pengaturan</a></div>
+    <div class="alert alert-error" role="alert">Modul izin dalam mode <b><?php echo h($LABEL_MODE[$peng['mode']]); ?></b> — pegawai belum bisa mengajukan izin.<?php if ($isAdmin): ?> <a href="izin_pengaturan.php#umum">Buka pengaturan</a><?php endif; ?></div>
   <?php endif; ?>
 
   <!-- KPI (maks. 5) -->
   <div class="iz-kpi iz-anim">
     <div class="iz-kpi-ubin"><span>Sedang izin sekarang</span><b class="tnum"><span data-angka="<?php echo (int) $sedangIzin; ?>"><?php echo $sedangIzin; ?></span></b><small><?php echo count($izinHariIni); ?> izin disetujui hari ini</small></div>
-    <a class="iz-kpi-ubin" href="izin_register.php?status=menunggu_persetujuan&amp;dari=<?php echo h($mulaiGrafik); ?>&amp;sampai=<?php echo h($lokal->modify('+30 days')->format('Y-m-d')); ?>"><span>Menunggu keputusan</span><b class="tnum"><span data-angka="<?php echo (int) count($menunggu); ?>"><?php echo count($menunggu); ?></span></b><small><?php echo count($lama); ?> lebih dari 30 menit</small></a>
+    <<?php echo $isAdmin ? 'a' : 'div'; ?> class="iz-kpi-ubin"<?php if ($isAdmin): ?> href="izin_register.php?status=menunggu_persetujuan&amp;dari=<?php echo h($mulaiGrafik); ?>&amp;sampai=<?php echo h($lokal->modify('+30 days')->format('Y-m-d')); ?>"<?php endif; ?>><span>Menunggu keputusan</span><b class="tnum"><span data-angka="<?php echo (int) count($menunggu); ?>"><?php echo count($menunggu); ?></span></b><small><?php echo count($lama); ?> lebih dari 30 menit</small></<?php echo $isAdmin ? 'a' : 'div'; ?>>
     <div class="iz-kpi-ubin <?php echo $jumlahMasalah ? 'iz-kpi--awas' : ''; ?>"><span>Perlu tindakan</span><b class="tnum"><span data-angka="<?php echo (int) $jumlahMasalah; ?>"><?php echo $jumlahMasalah; ?></span></b><small><?php echo $jumlahMasalah ? 'lihat daftar di bawah' : 'tidak ada masalah'; ?></small></div>
-    <a class="iz-kpi-ubin" href="izin_register.php"><span>Izin bulan ini</span><b class="tnum"><span data-angka="<?php echo (int) $totalBulan; ?>"><?php echo $totalBulan; ?></span></b><small><?php echo isset($perStatus['disetujui']) ? (int) $perStatus['disetujui'] : 0; ?> disetujui</small></a>
+    <<?php echo $isAdmin ? 'a href="izin_register.php"' : 'div'; ?> class="iz-kpi-ubin"><span>Izin bulan ini</span><b class="tnum"><span data-angka="<?php echo (int) $totalBulan; ?>"><?php echo $totalBulan; ?></span></b><small><?php echo isset($perStatus['disetujui']) ? (int) $perStatus['disetujui'] : 0; ?> disetujui</small></<?php echo $isAdmin ? 'a' : 'div'; ?>>
     <div class="iz-kpi-ubin"><span>Rata-rata waktu keputusan</span><b class="tnum"><?php echo $rata[1] ? (int) round($rata[0]) . '<em> mnt</em>' : '–'; ?></b><small><?php echo (int) $rata[1]; ?> keputusan bulan ini</small></div>
   </div>
 
@@ -153,7 +171,7 @@ function ikonStatus($baik)
       <ul class="iz-daftar-garis">
         <?php foreach ($izinHariIni as $p):
             $keadaan = $jamKini < $p['jam_mulai'] ? 'Terjadwal' : ($p['jam_kembali'] && $jamKini >= $p['jam_kembali'] ? 'Rentang selesai' : 'Dalam rentang izin'); ?>
-          <li><a href="../izin/detail.php?id=<?php echo (int) $p['id']; ?>"><?php echo h($p['pemohon_nama']); ?></a>
+          <li><?php echo $tautan($p['id'], $p['pemohon_nama']); ?>
             <span class="redup"><?php echo $p['jenis'] === 'pulang_awal' ? 'Pulang awal ' . $jam($p['jam_mulai']) : 'Keluar ' . $jam($p['jam_mulai']) . '–' . $jam($p['jam_kembali']); ?> · <?php echo h($keadaan); ?></span></li>
         <?php endforeach; ?>
       </ul>
@@ -165,12 +183,12 @@ function ikonStatus($baik)
       <?php if (!$jumlahMasalah): ?><p class="iz-baik"><?php echo ikonStatus(true); ?> Tidak ada yang perlu ditindaklanjuti.</p><?php endif; ?>
       <ul class="iz-daftar-garis">
         <?php foreach ($lama as $p): ?>
-          <li><a href="../izin/detail.php?id=<?php echo (int) $p['id']; ?>"><?php echo h($p['pemohon_nama']); ?></a>
+          <li><?php echo $tautan($p['id'], $p['pemohon_nama']); ?>
             <span class="redup">menunggu <?php echo h($p['pemberi_nama']); ?> sejak <?php echo h($sejak($p['diajukan_at'])); ?> lalu</span></li>
         <?php endforeach; ?>
         <?php foreach ($halangan as $p): ?>
-          <li><a href="../izin/detail.php?id=<?php echo (int) $p['id']; ?>"><?php echo h($p['pemohon_nama']); ?></a>
-            <span class="redup"><?php echo h($p['pemberi_nama']); ?> sedang berhalangan — alihkan</span></li>
+          <li><?php echo $tautan($p['id'], $p['pemohon_nama']); ?>
+            <span class="redup"><?php echo h($p['pemberi_nama']); ?> sedang berhalangan<?php echo $isAdmin ? ' — alihkan' : ' — admin perlu mengalihkan'; ?></span></li>
         <?php endforeach; ?>
         <?php foreach ($suratGagal as $d): ?>
           <li><a href="../izin/detail.php?id=<?php echo (int) $d['permohonan_id']; ?>">Surat <?php echo h($d['pemohon_nama']); ?></a>
@@ -206,9 +224,10 @@ function ikonStatus($baik)
         <?php endforeach; ?>
       </dl>
       <?php endif; ?>
-      <p style="margin-top:16px;"><a href="izin_register.php">Buka register lengkap</a></p>
+      <?php if ($isAdmin): ?><p style="margin-top:16px;"><a href="izin_register.php">Buka register lengkap</a></p><?php endif; ?>
     </section>
 
+    <?php if ($isAdmin): ?>
     <!-- Kesehatan sistem -->
     <section class="iz-panel iz-bagian" aria-labelledby="h-sistem">
       <h2 id="h-sistem">Kesehatan sistem</h2>
@@ -220,6 +239,7 @@ function ikonStatus($baik)
         <li><span class="<?php echo $peng['token_portal'] ? 'iz-baik' : 'iz-awas'; ?>"><?php echo ikonStatus((bool) $peng['token_portal']); ?> Token portal: <?php echo $peng['token_portal'] ? 'sudah dibuat' : 'belum dibuat'; ?></span></li>
       </ul>
     </section>
+    <?php endif; ?>
   </div>
 </div>
 

@@ -103,6 +103,17 @@ class Permohonan
         return $s->fetchAll();
     }
 
+    /** Apakah akun ini milik pegawai yang saat ini tercatat sebagai Ketua/Wakil/Panitera/Sekretaris? */
+    public static function pejabatAktif(PDO $db, $userId)
+    {
+        $s = $db->prepare(
+            'SELECT 1 FROM izin_pejabat j JOIN pegawai p ON p.id = j.pegawai_id
+             JOIN user_login u ON u.nip = p.nip AND u.nip <> \'\' WHERE u.id = ? AND u.status_aktif = 1 LIMIT 1'
+        );
+        $s->execute(array((int) $userId));
+        return (bool) $s->fetchColumn();
+    }
+
     /** Pemohon, pemberi (sekarang/dulu), penerima pemberitahuan, atau admin. */
     public static function bolehLihat(PDO $db, array $p, $userId, $isAdmin)
     {

@@ -16,11 +16,13 @@ use Aurat\Surat\JenisSuratRepository;
 // Modul izin (db/037): saat mode != nonaktif, menu surat izin lama diganti modul.
 $izinMode = 'nonaktif';
 $izinTugas = 0;
+$izinPejabat = false;
 try {
     $izinMode = (string) Database::pdo()->query('SELECT mode FROM izin_pengaturan WHERE id = 1')->fetchColumn();
     $st = Database::pdo()->prepare('SELECT COUNT(*) FROM izin_tahap WHERE pemberi_user_id = ? AND status = \'menunggu\'');
     $st->execute(array(isset($_SESSION['user_id']) ? $_SESSION['user_id'] : 0));
     $izinTugas = (int) $st->fetchColumn();
+    $izinPejabat = !Auth::isAdmin() && \Aurat\Izin\Permohonan::pejabatAktif(Database::pdo(), isset($_SESSION['user_id']) ? $_SESSION['user_id'] : 0);
 } catch (\PDOException $e) {
     // migrasi 037 belum jalan - menu lama saja
 }
@@ -67,6 +69,9 @@ foreach (JenisSuratRepository::semua(true) as $js) {
         <a class="nav-item <?php echo $halamanAktif === 'dashboard' ? 'active' : ''; ?>" href="<?php echo isset($rootAsset) ? $rootAsset : ''; ?>index.php">Dasbor</a>
         <?php if ($izinTampil): ?>
         <a class="nav-item <?php echo $halamanAktif === 'izin' ? 'active' : ''; ?>" href="<?php echo isset($rootAsset) ? $rootAsset : ''; ?>izin/index.php">Izin Keluar</a>
+        <?php endif; ?>
+        <?php if ($izinPejabat && $izinTampil): ?>
+        <a class="nav-item <?php echo $halamanAktif === 'admin_izin_dasbor' ? 'active' : ''; ?>" href="<?php echo isset($rootAsset) ? $rootAsset : ''; ?>admin/izin_dasbor.php">Dasbor Izin</a>
         <?php endif; ?>
         <?php if ($izinTugas > 0): ?>
         <a class="nav-item <?php echo $halamanAktif === 'izin_tugas' ? 'active' : ''; ?>" href="<?php echo isset($rootAsset) ? $rootAsset : ''; ?>izin/tugas.php">Tugas Izin <span class="badge badge-segera"><?php echo $izinTugas; ?></span></a>
