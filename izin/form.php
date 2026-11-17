@@ -25,7 +25,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'alasan' => $isian['alasan'],
             'asal_permohonan_id' => $isian['asal_permohonan_id'],
         ), sekarangUtc());
-        kilat('Permohonan terkirim. Pejabat sudah diberi tahu.');
+        if (Permohonan::muat($db, $id)['status'] === 'disetujui') { // Ketua: langsung sah
+            \Aurat\Izin\Dokumen::terbitkan($db, $id, sekarangUtc());
+            kilat('Izin tercatat dan ditandatangani sendiri. Surat siap diunduh.');
+        } else {
+            kilat('Permohonan terkirim. Pejabat sudah diberi tahu.');
+        }
         header('Location: detail.php?id=' . $id);
         exit;
     } catch (IzinException $e) {
@@ -76,7 +81,7 @@ if ($rute && !isset($rute['error'])) {
     <?php elseif ($tujuan): ?>
       <div class="iz-rute">
         <span class="iz-inisial" aria-hidden="true"><?php echo h(inisial($tujuan['nama'])); ?></span>
-        <div><small>Diajukan kepada</small><b><?php echo h($tujuan['nama']); ?></b> <span class="redup"><?php echo h($tujuan['jabatan']); ?></span>
+        <div><small><?php echo !empty($rute['mandiri']) ? 'Ditandatangani sendiri (langsung disetujui)' : 'Diajukan kepada'; ?></small><b><?php echo h($tujuan['nama']); ?></b> <span class="redup"><?php echo h($tujuan['jabatan']); ?></span>
           <?php if ($rute['mengetahui']): ?><small>Pemberitahuan juga ke <?php echo h($pejabat[$rute['mengetahui']]['nama']); ?> (mengetahui)</small><?php endif; ?></div>
       </div>
     <?php endif; ?>

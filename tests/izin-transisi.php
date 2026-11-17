@@ -99,9 +99,11 @@ ditolak('setujui setelah tanggal lewat', function () use ($db, $id4, $sabtu) { P
 P::tolak($db, 1, $id4, 1, 'Sudah lewat', $sabtu);
 
 // --- Ketua: di luar ruang lingkup; "Mulai sekarang" memakai jam server ---
-ditolak('Ketua tidak mengajukan lewat AURA', function () use ($db, $jumat) {
-    P::ajukan($db, 1, array('jenis' => 'pulang_awal', 'mulai_sekarang' => true, 'alasan' => 'Rapat di luar kantor'), $jumat);
-});
+$idK = P::ajukan($db, 1, array('jenis' => 'pulang_awal', 'mulai_sekarang' => true, 'alasan' => 'Rapat di luar kantor'), $jumat);
+cek('Ketua: langsung disetujui', P::muat($db, $idK)['status'] === 'disetujui');
+cek('Ketua: pemberi = Ketua sendiri', (int) P::tahap($db, $idK)[0]['pemberi_user_id'] === 1 && P::tahap($db, $idK)[0]['status'] === 'selesai');
+cek('Ketua: tanpa mengetahui & tanpa WA tugas', P::muat($db, $idK)['mengetahui_user_id'] === null
+    && satu($db, "SELECT COUNT(*) FROM izin_wa_outbox WHERE permohonan_id=?", array($idK)) == 0);
 $id5 = P::ajukan($db, 4, array('jenis' => 'pulang_awal', 'mulai_sekarang' => true, 'alasan' => 'Menjemput anak di sekolah'), $jumat);
 cek('A28 jam mulai dari server', P::muat($db, $id5)['jam_mulai'] === '13:05:00', P::muat($db, $id5)['jam_mulai']);
 

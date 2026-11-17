@@ -177,7 +177,7 @@ Pemetaan menggunakan kode kelompok eksplisit: `hakim`, `wakil`, `kepaniteraan`, 
 | Kepaniteraan/Kesekretariatan | Pemberi normal dan Wakil berhalangan | Ketua: setuju/tolak | Tidak ada |
 | Panitera/Sekretaris | Wakil tersedia | Wakil: setuju/tolak, usulan | Tidak ada |
 | Panitera/Sekretaris | Wakil berhalangan | Ketua: setuju/tolak, usulan | Tidak ada |
-| Ketua | Selalu | Tidak diproses AURA (di luar ruang lingkup) | — |
+| Ketua | Selalu | Ketua sendiri: langsung disetujui dan ditandatangani sendiri (keputusan 17 November 2026) | — |
 | Kelompok tidak dipetakan | Belum ada kebijakan | Blokir submit, jelaskan konfigurasi belum lengkap | — |
 
 Tidak ada auto-approve bagi jabatan puncak. Tidak boleh menyetujui permohonan sendiri. Jika kandidat akhir kosong, nonaktif, tidak punya akun pegawai yang valid, atau sama dengan pemohon, blokir proses dan tampilkan alasan kepada pengelola; jangan melewati tahap diam-diam.
@@ -360,7 +360,7 @@ Nomor migrasi berikutnya ditentukan dari repository AURA aktual. `036` adalah be
 | A05 | Pemberi normal dan Wakil berhalangan | Ketua menjadi pemberi; satu keputusan cukup |
 | A06 | Wakil berhalangan, pemberi normal hadir | Persetujuan Panitera/Sekretaris tetap berjalan; pemberitahuan ke Wakil tidak menghambat |
 | A07 | Ketua kosong/berhalangan, pemetaan ambigu | Tidak auto-approve atau fallback ke orang sembarang |
-| A07b | Ketua mengajukan | Ditolak dengan pesan; tidak ada permohonan tercatat |
+| A07b | Ketua mengajukan | Langsung disetujui atas nama Ketua sendiri; tanpa Wakil, tanpa WA tugas; surat terbit |
 | A07c | Saklar izin lisan mati | Opsi tidak tampil; POST dengan waktu kejadian lampau ditolak server |
 | A08 | Pemohon memalsukan NIP, pejabat, kelompok, status POST | Ditolak atau diabaikan untuk field server; identitas/rute tetap server-side |
 | A09 | Admin/pengelola tanpa penugasan mencoba approve | Ditolak meskipun dapat membuka register |

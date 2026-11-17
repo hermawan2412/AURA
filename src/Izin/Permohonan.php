@@ -196,8 +196,15 @@ class Permohonan
 
             $pb = $pejabat[$rute['pemberi']];
             $tahapId = self::buatTahap($db, $pid, $pb, null, $kini);
-            self::beritahu($db, $peng, $pb['user_id'], $p, 'tugas_' . $tahapId, $tahapId, $sekarang);
             self::audit($db, $pid, $userId, 'ajukan', null, $p['status'], null, array('rute' => $rute), $sekarang);
+            if (!empty($rute['mandiri'])) {
+                // Ketua: langsung disetujui dan ditandatangani sendiri; tidak ada tugas/WA ke pejabat lain.
+                $db->prepare('UPDATE izin_tahap SET status = \'selesai\', diputus_at = ? WHERE id = ?')->execute(array($kini, $tahapId));
+                self::ubahStatus($db, $p, 'disetujui', $userId, 'Ditandatangani sendiri oleh Ketua', $kini);
+                self::audit($db, $pid, $userId, 'setujui', 'menunggu_persetujuan', 'disetujui', 'Ditandatangani sendiri oleh Ketua', null, $sekarang);
+            } else {
+                self::beritahu($db, $peng, $pb['user_id'], $p, 'tugas_' . $tahapId, $tahapId, $sekarang);
+            }
             return $pid;
         });
     }

@@ -39,7 +39,8 @@ cek('A06', Routing::tentukan('kepaniteraan', $p, array(2), 7), array('pemberi' =
 cek('panitera', Routing::tentukan('panitera', $p, array(), 5), array('pemberi' => 'wakil', 'mengetahui' => null));
 cek('sekretaris wakil halangan', Routing::tentukan('sekretaris', $p, array(2), 6), array('pemberi' => 'ketua', 'mengetahui' => null));
 // Ketua: di luar ruang lingkup modul (hanya izin lingkungan kantor)
-cek('ketua ditolak', isset(Routing::tentukan('ketua', $p, array(), 1)['error']), true);
+cek('ketua tanda tangan sendiri', Routing::tentukan('ketua', $p, array(), 1), array('pemberi' => 'ketua', 'mengetahui' => null, 'mandiri' => true));
+cek('kelompok ketua tapi bukan Ketua tercatat', isset(Routing::tentukan('ketua', $p, array(), 3)['error']), true);
 // Ketua berhalangan untuk hakim -> Wakil; Ketua & Wakil berhalangan -> error
 cek('hakim, ketua halangan -> wakil', Routing::tentukan('hakim', $p, array(1), 3), array('pemberi' => 'wakil', 'mengetahui' => null));
 cek('hakim, ketua & wakil halangan', isset(Routing::tentukan('hakim', $p, array(1, 2), 3)['error']), true);

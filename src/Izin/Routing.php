@@ -55,8 +55,11 @@ class Routing
 
         switch ($kelompok) {
             case 'ketua':
-                // Ruang lingkup modul hanya izin di lingkungan kantor (keputusan pengguna 2026-11-16).
-                return array('error' => 'Izin Ketua tidak diproses melalui AURA.');
+                // Ketua menandatangani izinnya sendiri, tidak dialihkan ke Wakil (keputusan pengguna 2026-11-17).
+                if (isset($pejabat['ketua']) && $pejabat['ketua']['user_aktif'] && (int) $pejabat['ketua']['pegawai_id'] === $pemohonPegawaiId) {
+                    return array('pemberi' => 'ketua', 'mengetahui' => null, 'mandiri' => true);
+                }
+                return array('error' => 'Akun Anda dipetakan sebagai Ketua tetapi bukan Ketua yang tercatat. Hubungi admin.');
 
             case 'hakim':
                 // Ketua berhalangan -> Wakil (keputusan pengguna 2026-11-16).
