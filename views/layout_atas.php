@@ -63,19 +63,34 @@ foreach (JenisSuratRepository::semua(true) as $js) {
       <div class="brand-text"><?php echo htmlspecialchars(Pengaturan::namaAplikasi()); ?><small><?php echo htmlspecialchars(Pengaturan::namaInstansi()); ?></small></div>
     </div>
 
+    <?php
+    // Satu baris menu: ikon garis + label (+ lencana opsional). Ikon sama gaya dgn ikon jenis surat.
+    $IKON_NAV = array(
+        'rumah' => '<path d="M4 11l8-7 8 7v9H4z"/><path d="M10 20v-5h4v5"/>',
+        'pintu' => '<path d="M6 21V4h10v17"/><path d="M4 21h16M13 12h.01"/><path d="M16 7l3 1v13"/>',
+        'centang' => '<rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8.5 12.5l2.5 2.5 5-5.5"/>',
+        'grafik' => '<path d="M4 20V4M4 20h16"/><path d="M8 16v-4M12 16V8M16 16v-6"/>',
+        'daftar' => '<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6h.01M4 12h.01M4 18h.01"/>',
+        'gerigi' => '<circle cx="12" cy="12" r="3"/><path d="M12 3v2.5M12 18.5V21M3 12h2.5M18.5 12H21M5.6 5.6l1.8 1.8M16.6 16.6l1.8 1.8M5.6 18.4l1.8-1.8M16.6 7.4l1.8-1.8"/>',
+        'orang' => '<circle cx="12" cy="8" r="3.5"/><path d="M5 20c1-4 4-6 7-6s6 2 7 6"/>',
+        'arsip' => '<rect x="3.5" y="4" width="17" height="5" rx="1"/><path d="M5 9v11h14V9M10 13h4"/>',
+        'templat' => '<path d="M7 3.5h7l4 4V20.5H7z"/><path d="M14 3.5V8h4M10 13h5M10 16.5h5"/>',
+        'kunci' => '<circle cx="8" cy="15" r="4"/><path d="M11 12l8-8M16 7l2 2"/>',
+    );
+    $navItem = function ($kode, $label, $href, $ikon, $lencana = 0) use ($halamanAktif, $IKON_NAV) {
+        echo '<a class="nav-item ' . ($halamanAktif === $kode ? 'active' : '') . '" href="' . (isset($GLOBALS['rootAsset']) ? $GLOBALS['rootAsset'] : '') . $href . '">'
+            . '<span class="nav-icon"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+            . $IKON_NAV[$ikon] . '</svg></span>' . htmlspecialchars($label)
+            . ($lencana > 0 ? ' <span class="badge badge-segera">' . (int) $lencana . '</span>' : '') . '</a>';
+    };
+    ?>
     <nav>
       <div class="nav-group">
         <span class="nav-label">Menu</span>
-        <a class="nav-item <?php echo $halamanAktif === 'dashboard' ? 'active' : ''; ?>" href="<?php echo isset($rootAsset) ? $rootAsset : ''; ?>index.php">Dasbor</a>
-        <?php if ($izinTampil): ?>
-        <a class="nav-item <?php echo $halamanAktif === 'izin' ? 'active' : ''; ?>" href="<?php echo isset($rootAsset) ? $rootAsset : ''; ?>izin/index.php">Izin Keluar</a>
-        <?php endif; ?>
-        <?php if ($izinPejabat && $izinTampil): ?>
-        <a class="nav-item <?php echo $halamanAktif === 'admin_izin_dasbor' ? 'active' : ''; ?>" href="<?php echo isset($rootAsset) ? $rootAsset : ''; ?>admin/izin_dasbor.php">Dasbor Izin</a>
-        <?php endif; ?>
-        <?php if ($izinTugas > 0): ?>
-        <a class="nav-item <?php echo $halamanAktif === 'izin_tugas' ? 'active' : ''; ?>" href="<?php echo isset($rootAsset) ? $rootAsset : ''; ?>izin/tugas.php">Tugas Izin <span class="badge badge-segera"><?php echo $izinTugas; ?></span></a>
-        <?php endif; ?>
+        <?php $navItem('dashboard', 'Dasbor', 'index.php', 'rumah'); ?>
+        <?php if ($izinTampil) { $navItem('izin', 'Izin Keluar', 'izin/index.php', 'pintu'); } ?>
+        <?php if ($izinTugas > 0) { $navItem('izin_tugas', 'Tugas Izin', 'izin/tugas.php', 'centang', $izinTugas); } ?>
+        <?php if (($izinPejabat || Auth::isAdmin()) && $izinTampil) { $navItem('admin_izin_dasbor', 'Dasbor Izin', 'admin/izin_dasbor.php', 'grafik'); } ?>
       </div>
       <?php if ($menuSurat): ?>
       <div class="nav-group">
@@ -88,19 +103,23 @@ foreach (JenisSuratRepository::semua(true) as $js) {
         <?php endforeach; ?>
       </div>
       <?php endif; ?>
+      <?php if (Auth::isAdmin()): ?>
+      <div class="nav-group">
+        <span class="nav-label">Izin</span>
+        <?php $navItem('admin_izin_register', 'Register Izin', 'admin/izin_register.php', 'daftar'); ?>
+        <?php $navItem('admin_izin_pengaturan', 'Pengaturan Izin', 'admin/izin_pengaturan.php', 'gerigi'); ?>
+      </div>
+      <?php endif; ?>
       <?php if (Auth::isPengelolaAtauAdmin()): ?>
       <div class="nav-group">
-        <span class="nav-label">Kelola</span>
-        <a class="nav-item <?php echo $halamanAktif === 'pegawai' ? 'active' : ''; ?>" href="<?php echo isset($rootAsset) ? $rootAsset : ''; ?>pegawai.php">Data Pegawai</a>
-        <a class="nav-item <?php echo $halamanAktif === 'admin_jenis_surat' ? 'active' : ''; ?>" href="<?php echo isset($rootAsset) ? $rootAsset : ''; ?>admin/jenis_surat.php">Kelola Jenis Surat</a>
-        <a class="nav-item <?php echo $halamanAktif === 'admin_surat_diterbitkan' ? 'active' : ''; ?>" href="<?php echo isset($rootAsset) ? $rootAsset : ''; ?>admin/surat_diterbitkan.php">Riwayat Surat Diterbitkan</a>
-        <?php if (Auth::isAdmin()): ?>
-        <a class="nav-item <?php echo $halamanAktif === 'admin_user_login' ? 'active' : ''; ?>" href="<?php echo isset($rootAsset) ? $rootAsset : ''; ?>admin/user_login.php">Kelola Pengguna</a>
-        <a class="nav-item <?php echo $halamanAktif === 'admin_pengaturan' ? 'active' : ''; ?>" href="<?php echo isset($rootAsset) ? $rootAsset : ''; ?>admin/pengaturan.php">Pengaturan Aplikasi</a>
-        <a class="nav-item <?php echo $halamanAktif === 'admin_izin_dasbor' ? 'active' : ''; ?>" href="<?php echo isset($rootAsset) ? $rootAsset : ''; ?>admin/izin_dasbor.php">Dasbor Izin</a>
-        <a class="nav-item <?php echo $halamanAktif === 'admin_izin_register' ? 'active' : ''; ?>" href="<?php echo isset($rootAsset) ? $rootAsset : ''; ?>admin/izin_register.php">Register Izin</a>
-        <a class="nav-item <?php echo $halamanAktif === 'admin_izin_pengaturan' ? 'active' : ''; ?>" href="<?php echo isset($rootAsset) ? $rootAsset : ''; ?>admin/izin_pengaturan.php">Pengaturan Izin</a>
-        <?php endif; ?>
+        <span class="nav-label">Data &amp; Arsip</span>
+        <?php $navItem('pegawai', 'Data Pegawai', 'pegawai.php', 'orang'); ?>
+        <?php $navItem('admin_surat_diterbitkan', 'Riwayat Surat', 'admin/surat_diterbitkan.php', 'arsip'); ?>
+      </div>
+      <div class="nav-group">
+        <span class="nav-label">Pengaturan</span>
+        <?php $navItem('admin_jenis_surat', 'Jenis Surat', 'admin/jenis_surat.php', 'templat'); ?>
+        <?php if (Auth::isAdmin()) { $navItem('admin_user_login', 'Pengguna', 'admin/user_login.php', 'kunci'); $navItem('admin_pengaturan', 'Aplikasi', 'admin/pengaturan.php', 'gerigi'); } ?>
       </div>
       <?php endif; ?>
     </nav>
