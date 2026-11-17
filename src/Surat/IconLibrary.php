@@ -5,6 +5,7 @@ namespace Aurat\Surat;
 /**
  * Set ikon SVG bawaan untuk kartu jenis surat di dasbor. jenis_surat.icon hanya
  * menyimpan slug (bukan markup SVG) -- lihat db/004_ikon_jenis_surat.sql.
+ * Geometri ikon dari Lucide v1.66.0 (https://lucide.dev, lisensi ISC); slug lama dipertahankan.
  */
 class IconLibrary
 {
@@ -13,51 +14,51 @@ class IconLibrary
     private static $icons = array(
         'dokumen' => array(
             'label' => 'Dokumen (umum)',
-            'svg'   => '<rect x="5" y="3" width="14" height="18" rx="2"/><line x1="8" y1="8" x2="16" y2="8"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="8" y1="16" x2="13" y2="16"/>',
+            'svg'   => '<path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>',
         ),
         'kalender' => array(
             'label' => 'Kalender',
-            'svg'   => '<rect x="3" y="5" width="18" height="16" rx="2"/><line x1="8" y1="3" x2="8" y2="7"/><line x1="16" y1="3" x2="16" y2="7"/><line x1="3" y1="10" x2="21" y2="10"/>',
+            'svg'   => '<path d="M8 2v3"/><path d="M16 2v3"/><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/>',
         ),
         'centang_orang' => array(
             'label' => 'Orang Bercentang',
-            'svg'   => '<circle cx="9" cy="8" r="3.5"/><path d="M3 21v-1a6 6 0 0 1 6-6h0a6 6 0 0 1 6 6v1"/><polyline points="16 11 18.5 13.5 22 9"/>',
+            'svg'   => '<path d="m16 11 2 2 4-4"/><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/>',
         ),
         'papan_clip' => array(
             'label' => 'Papan Klip Bercentang',
-            'svg'   => '<rect x="5" y="4" width="14" height="17" rx="2"/><rect x="9" y="2" width="6" height="4" rx="1"/><polyline points="9 13 11 15 15 10"/>',
+            'svg'   => '<rect width="8" height="4" x="8" y="2" rx="1" ry="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><path d="m9 14 2 2 4-4"/>',
         ),
         'perisai' => array(
             'label' => 'Perisai',
-            'svg'   => '<path d="M12 3 19 6 19 12C19 16.5 16 19.5 12 21 8 19.5 5 16.5 5 12L5 6Z"/>',
+            'svg'   => '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>',
         ),
         'amplop' => array(
             'label' => 'Amplop',
-            'svg'   => '<rect x="3" y="5" width="18" height="14" rx="2"/><polyline points="3 7 12 14 21 7"/>',
+            'svg'   => '<path d="m22 7-8.991 5.727a2 2 0 0 1-2.009 0L2 7"/><rect x="2" y="4" width="20" height="16" rx="2"/>',
         ),
         'tas_kerja' => array(
             'label' => 'Tas Kerja',
-            'svg'   => '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="3" y1="13" x2="21" y2="13"/>',
+            'svg'   => '<path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><rect width="20" height="14" x="2" y="6" rx="2"/>',
         ),
         'medali' => array(
             'label' => 'Medali',
-            'svg'   => '<circle cx="12" cy="8" r="5"/><path d="M8.5 12.5 7 21 12 18 17 21 15.5 12.5"/>',
+            'svg'   => '<path d="m15.477 12.89 1.515 8.526a.5.5 0 0 1-.81.47l-3.58-2.687a1 1 0 0 0-1.197 0l-3.586 2.686a.5.5 0 0 1-.81-.469l1.514-8.526"/><circle cx="12" cy="8" r="6"/>',
         ),
         'kelompok' => array(
             'label' => 'Kelompok/Tim',
-            'svg'   => '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 21v-1a6 6 0 0 1 6-6h1a6 6 0 0 1 6 6v1"/><circle cx="18" cy="7.5" r="2.5"/><path d="M16.3 12a5 5 0 0 1 4.7 5v1"/>',
+            'svg'   => '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><path d="M16 3.128a4 4 0 0 1 0 7.744"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><circle cx="9" cy="7" r="4"/>',
         ),
         'bendera' => array(
             'label' => 'Bendera',
-            'svg'   => '<line x1="5" y1="3" x2="5" y2="21"/><path d="M5 4h13l-3 4.5 3 4.5H5"/>',
+            'svg'   => '<path d="M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10a1 1 0 0 1-.4.8A6 6 0 0 1 16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528"/>',
         ),
         'lonceng' => array(
             'label' => 'Lonceng',
-            'svg'   => '<path d="M6 10a6 6 0 0 1 12 0v4l2 3H4l2-3Z"/><path d="M10 20a2 2 0 0 0 4 0"/>',
+            'svg'   => '<path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/>',
         ),
         'kartu_id' => array(
             'label' => 'Kartu Identitas',
-            'svg'   => '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="12" r="2"/><line x1="14" y1="10" x2="18" y2="10"/><line x1="14" y1="14" x2="18" y2="14"/>',
+            'svg'   => '<path d="M13 19a4 4 0 00-8 0"/><path d="M16 10h2"/><path d="M16 14h2"/><circle cx="9" cy="12" r="3"/><rect x="2" y="5" width="20" height="14" rx="2"/>',
         ),
     );
 
@@ -83,7 +84,7 @@ class IconLibrary
         $inner = self::$icons[$slug]['svg'];
 
         return '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" '
-            . 'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+            . 'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
             . $inner . '</svg>';
     }
 }

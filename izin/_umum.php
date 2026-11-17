@@ -81,17 +81,17 @@ function tampilKilat()
     }
 }
 
-/** Ikon garis kecil (stroke = currentColor). */
+/** Ikon garis kecil (stroke = currentColor), geometri dari Lucide v1.66.0 (lucide.dev, ISC). */
 function ikonIzin($nama, $ukuran = 20)
 {
     $jalur = array(
-        'centang' => '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
-        'jam' => '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
-        'silang' => '<path d="M7 7l10 10M17 7L7 17"/>',
-        'dokumen' => '<path d="M7 3.5h7l4 4V20.5H7z"/><path d="M14 3.5V8h4M10 13h5M10 16.5h5"/>',
-        'panah' => '<path d="M9 6l6 6-6 6"/>',
-        'unduh' => '<path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19.5h14"/>',
-        'tambah' => '<path d="M12 5v14M5 12h14"/>',
+        'centang' => '<path d="M20 6 9 17l-5-5"/>',
+        'jam' => '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+        'silang' => '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+        'dokumen' => '<path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z"/><path d="M14 2v5a1 1 0 0 0 1 1h5"/><path d="M10 9H8"/><path d="M16 13H8"/><path d="M16 17H8"/>',
+        'panah' => '<path d="m9 18 6-6-6-6"/>',
+        'unduh' => '<path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/>',
+        'tambah' => '<path d="M5 12h14"/><path d="M12 5v14"/>',
     );
     return '<svg width="' . (int) $ukuran . '" height="' . (int) $ukuran . '" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' . $jalur[$nama] . '</svg>';
 }

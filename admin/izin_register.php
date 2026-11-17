@@ -107,7 +107,7 @@ $jumlahHalaman = max(1, (int) ceil($total / 50));
           </div>
         </details>
         <button class="btn btn-secondary" type="submit">Tampilkan</button>
-        <a class="btn btn-secondary" href="<?php echo $query(array('csv' => 1)); ?>"><?php echo '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 4v11M7.5 10.5L12 15l4.5-4.5M5 19.5h14"/></svg>'; ?>Ekspor CSV</a>
+        <a class="btn btn-secondary" href="<?php echo $query(array('csv' => 1)); ?>"><?php echo '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3"/><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/></svg>'; ?>Ekspor CSV</a>
       </div>
     </div>
     <?php if ($chip || $f['q'] !== ''): ?>
@@ -131,7 +131,7 @@ $jumlahHalaman = max(1, (int) ceil($total / 50));
             <td><?php echo h($p['pemberi']); ?></td>
             <td><?php echo h(Permohonan::LABEL_STATUS[$p['status']]); ?></td>
             <td class="tnum"><?php echo h($p['nomor']); ?></td>
-            <td class="iz-panah"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></td>
+            <td class="iz-panah"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></td>
           </tr>
         <?php endforeach; ?>
         </tbody>
