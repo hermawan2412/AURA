@@ -101,13 +101,18 @@ class Formatter
 
     public static function namaBergelar(array $pegawai)
     {
-        $bagian = array();
-        if (!empty($pegawai['gelar_depan'])) {
-            $bagian[] = $pegawai['gelar_depan'];
+        // Nama dari RESTU sudah sering memuat gelar ("Nama, S.H., M.H"); jangan ditambah dua kali.
+        // Pembanding mengabaikan spasi, titik, dan koma (mis. "M.H" vs "M.H.").
+        $polos = function ($t) {
+            return strtolower(str_replace(array(' ', '.', ','), '', (string) $t));
+        };
+        $nama = (string) $pegawai['nama_lengkap'];
+        $n = $polos($nama);
+        if (!empty($pegawai['gelar_depan']) && strpos($n, $polos($pegawai['gelar_depan'])) !== 0) {
+            $nama = $pegawai['gelar_depan'] . ' ' . $nama;
         }
-        $bagian[] = $pegawai['nama_lengkap'];
-        $nama = implode(' ', $bagian);
-        if (!empty($pegawai['gelar_belakang'])) {
+        $gb = $polos(isset($pegawai['gelar_belakang']) ? $pegawai['gelar_belakang'] : '');
+        if ($gb !== '' && substr($n, -strlen($gb)) !== $gb) {
             $nama .= ', ' . $pegawai['gelar_belakang'];
         }
         return $nama;
