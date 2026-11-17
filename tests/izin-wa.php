@@ -76,6 +76,21 @@ $g = P::ajukan($db, 4, $izin('14:00', '14:30'), $jumat);
 cek('WA nonaktif: tidak ada antrean baru', $status($g, 1) === false);
 $db->exec('UPDATE izin_pengaturan SET wa_aktif = 1 WHERE id = 1');
 
+// Batas harian: terkirim hari ini (zona kantor) >= batas -> antrean ditahan, tidak dikirim
+$db->exec('UPDATE izin_pengaturan SET wa_batas_harian = 1 WHERE id = 1');
+$sudah = Wa::hitungTerkirim($db, P::pengaturan($db), $jumat, 'hari');
+$db->exec('UPDATE izin_pengaturan SET wa_batas_harian = ' . max(1, $sudah) . ' WHERE id = 1');
+$jumlahSebelum = count($terkirim);
+$h2 = P::ajukan($db, 4, $izin('15:00', '15:30'), $jumat);
+$hb = Wa::prosesAntrean($db, $jumat);
+cek('batas harian: tidak ada kiriman baru', count($terkirim) === $jumlahSebelum, $hb);
+cek('batas harian: antrean ditahan, tetap antre', $hb['ditahan'] >= 1 && $status($h2, 1)['status'] === 'antre', $hb);
+$db->exec('UPDATE izin_pengaturan SET wa_batas_harian = ' . ($sudah + 50) . ' WHERE id = 1');
+Wa::prosesAntrean($db, $jumat);
+cek('batas dinaikkan: antrean terkirim', $status($h2, 1)['status'] === 'terkirim');
+cek('hitung bulan >= hari', Wa::hitungTerkirim($db, P::pengaturan($db), $jumat, 'bulan') >= Wa::hitungTerkirim($db, P::pengaturan($db), $jumat, 'hari'));
+$db->exec('UPDATE izin_pengaturan SET wa_batas_harian = 100 WHERE id = 1');
+
 cek('format nomor', Wa::formatNomor('+62 812-3456-789') === '628123456789' && Wa::formatNomor('0812') === null && Wa::formatNomor('') === null);
 
 echo $gagal === 0 ? "OK izin-wa\n" : "$gagal gagal\n";

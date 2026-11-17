@@ -49,12 +49,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                 }
                 $token = trim((string) $_POST['wa_token']);
-                $db->prepare('UPDATE izin_pengaturan SET mode = ?, zona_waktu = ?, izin_lisan_aktif = ?, wa_aktif = ?, wa_token = IF(? = \'\', wa_token, ?), updated_at = ? WHERE id = 1')
-                    ->execute(array($mode, $zona, empty($_POST['izin_lisan_aktif']) ? 0 : 1, empty($_POST['wa_aktif']) ? 0 : 1, $token, $token, Permohonan::utc($kini)));
+                $waBatas = filter_var(isset($_POST['wa_batas_harian']) ? $_POST['wa_batas_harian'] : '', FILTER_VALIDATE_INT, array('options' => array('min_range' => 1, 'max_range' => 10000)));
+                $waKuota = filter_var(isset($_POST['wa_kuota_bulanan']) ? $_POST['wa_kuota_bulanan'] : '', FILTER_VALIDATE_INT, array('options' => array('min_range' => 1, 'max_range' => 1000000)));
+                if ($waBatas === false || $waKuota === false) {
+                    throw new RuntimeException('Batas WA per hari harus 1–10.000 dan kuota bulanan 1–1.000.000.');
+                }
+                $db->prepare('UPDATE izin_pengaturan SET mode = ?, zona_waktu = ?, izin_lisan_aktif = ?, wa_aktif = ?, wa_token = IF(? = \'\', wa_token, ?), wa_batas_harian = ?, wa_kuota_bulanan = ?, updated_at = ? WHERE id = 1')
+                    ->execute(array($mode, $zona, empty($_POST['izin_lisan_aktif']) ? 0 : 1, empty($_POST['wa_aktif']) ? 0 : 1, $token, $token, $waBatas, $waKuota, Permohonan::utc($kini)));
                 if (!empty($_POST['token_portal_baru'])) {
                     $db->prepare('UPDATE izin_pengaturan SET token_portal = ? WHERE id = 1')->execute(array(bin2hex(random_bytes(24))));
                 }
-                Permohonan::auditKonfigurasi($db, $userId, 'ubah_pengaturan', array('mode' => $mode, 'zona' => $zona, 'wa_aktif' => !empty($_POST['wa_aktif']), 'token_wa_diganti' => $token !== '', 'token_portal_baru' => !empty($_POST['token_portal_baru'])), $kini);
+                Permohonan::auditKonfigurasi($db, $userId, 'ubah_pengaturan', array('mode' => $mode, 'zona' => $zona, 'wa_aktif' => !empty($_POST['wa_aktif']), 'wa_batas_harian' => $waBatas, 'wa_kuota_bulanan' => $waKuota, 'token_wa_diganti' => $token !== '', 'token_portal_baru' => !empty($_POST['token_portal_baru'])), $kini);
                 break;
 
             case 'jadwal':
@@ -227,6 +232,21 @@ $LABEL_MODE = array('nonaktif' => 'Nonaktif — jalur surat lama', 'aktif' => 'A
       <section class="iz-bagian" id="umum" aria-labelledby="h-umum">
         <h2 id="h-umum">Status modul &amp; WhatsApp</h2>
         <p>Mode aktif atau pemeliharaan menutup pembuatan surat izin lewat menu surat lama. Mode aktif butuh keempat pejabat terisi.</p>
+        <?php
+        $waBulan = Wa::hitungTerkirim($db, $peng, $kini, 'bulan');
+        $waHari = Wa::hitungTerkirim($db, $peng, $kini, 'hari');
+        $waKuota = max(1, (int) $peng['wa_kuota_bulanan']);
+        $waBatasHr = max(1, (int) $peng['wa_batas_harian']);
+        $waPersen = (int) floor($waBulan * 100 / $waKuota);
+        $waGagal = $db->query("SELECT error, dibuat_at FROM izin_wa_outbox WHERE status = 'gagal' ORDER BY id DESC LIMIT 1")->fetch();
+        $waPeringatan = $waPersen >= 80 || $waHari >= $waBatasHr;
+        ?>
+        <div class="alert <?php echo $waPeringatan ? 'alert-error' : 'alert-info'; ?>" role="status">
+          WhatsApp terkirim bulan ini: <b><?php echo $waBulan; ?></b> dari kuota <?php echo $waKuota; ?> (<?php echo $waPersen; ?>%). Hari ini: <b><?php echo $waHari; ?></b> dari batas <?php echo $waBatasHr; ?>.
+          <?php if ($waPersen >= 80): ?><br>Kuota Fonnte hampir habis. Cek paket di dashboard Fonnte; setelah habis, WA berhenti sampai bulan depan.<?php endif; ?>
+          <?php if ($waHari >= $waBatasHr): ?><br>Batas harian tercapai: antrean WA ditahan sampai besok.<?php endif; ?>
+          <?php if ($waGagal): ?><br>Gagal terakhir: <?php echo h((string) $waGagal['error']); ?><?php endif; ?>
+        </div>
         <form method="post">
           <?php echo Csrf::field(); ?><input type="hidden" name="bagian" value="umum">
           <div class="grid-2">
@@ -240,6 +260,14 @@ $LABEL_MODE = array('nonaktif' => 'Nonaktif — jalur surat lama', 'aktif' => 'A
             <input type="checkbox" role="switch" id="wa-aktif" name="wa_aktif" value="1" <?php echo $peng['wa_aktif'] ? 'checked' : ''; ?>></label>
           <div class="field"><label for="wa_token">Token Fonnte <span class="iz-opsional"><?php echo $peng['wa_token'] ? '(tersimpan — kosongkan bila tidak diganti)' : '(belum diisi)'; ?></span></label>
             <input id="wa_token" name="wa_token" type="password" autocomplete="off"></div>
+          <div class="grid-2">
+            <div class="field"><label for="wa_batas_harian">Batas WA per hari</label>
+              <input id="wa_batas_harian" name="wa_batas_harian" type="number" min="1" max="10000" required value="<?php echo (int) $peng['wa_batas_harian']; ?>">
+              <span class="iz-opsional">Lewat batas, antrean ditahan sampai besok; notifikasi di aplikasi tetap jalan.</span></div>
+            <div class="field"><label for="wa_kuota_bulanan">Kuota bulanan paket Fonnte</label>
+              <input id="wa_kuota_bulanan" name="wa_kuota_bulanan" type="number" min="1" max="1000000" required value="<?php echo (int) $peng['wa_kuota_bulanan']; ?>">
+              <span class="iz-opsional">Sesuai paket di dashboard Fonnte; peringatan pada 80%.</span></div>
+          </div>
           <label class="iz-saklar" for="lisan"><span><b>Izin darurat/lisan</b><span>Disiapkan untuk kebijakan nanti; belum dipakai di versi ini</span></span>
             <input type="checkbox" role="switch" id="lisan" name="izin_lisan_aktif" value="1" <?php echo $peng['izin_lisan_aktif'] ? 'checked' : ''; ?>></label>
           <label class="iz-saklar" for="token-baru"><span><b>Buat token portal baru</b><span><?php echo $peng['token_portal'] ? 'Token sekarang: <code>' . h($peng['token_portal']) . '</code> — salin ke izin_config.php portal' : 'Belum ada token portal'; ?></span></span>

@@ -78,11 +78,19 @@ class Wa
      */
     public static function prosesAntrean(\PDO $db, \DateTimeImmutable $sekarang, $batas = 20)
     {
-        $hasil = array('terkirim' => 0, 'gagal' => 0, 'diulang' => 0, 'dibatalkan' => 0);
+        $hasil = array('terkirim' => 0, 'gagal' => 0, 'diulang' => 0, 'dibatalkan' => 0, 'ditahan' => 0);
         $peng = Permohonan::pengaturan($db);
         if (!(int) $peng['wa_aktif'] || trim((string) $peng['wa_token']) === '') {
             return $hasil;
         }
+        // Batas harian (zona kantor): lewat batas, antrean ditahan sampai besok; pesan yang
+        // keburu basi dibatalkan oleh pemeriksaan "usang" di bawah pada putaran berikutnya.
+        $sisa = max(1, (int) $peng['wa_batas_harian']) - self::hitungTerkirim($db, $peng, $sekarang, 'hari');
+        if ($sisa <= 0) {
+            $hasil['ditahan'] = (int) $db->query("SELECT COUNT(*) FROM izin_wa_outbox WHERE status = 'antre'")->fetchColumn();
+            return $hasil;
+        }
+        $batas = min((int) $batas, $sisa);
         $kini = Permohonan::utc($sekarang);
         $hariIni = $sekarang->setTimezone(new \DateTimeZone($peng['zona_waktu']))->format('Y-m-d');
         $s = $db->prepare(
@@ -118,5 +126,15 @@ class Wa
             }
         }
         return $hasil;
+    }
+
+    /** Jumlah pesan terkirim sejak awal hari ('hari') atau awal bulan ('bulan') menurut zona kantor. */
+    public static function hitungTerkirim(\PDO $db, array $peng, \DateTimeImmutable $sekarang, $rentang)
+    {
+        $lokal = $sekarang->setTimezone(new \DateTimeZone($peng['zona_waktu']));
+        $mulai = $rentang === 'bulan' ? $lokal->modify('first day of this month')->setTime(0, 0) : $lokal->setTime(0, 0);
+        $s = $db->prepare("SELECT COUNT(*) FROM izin_wa_outbox WHERE status = 'terkirim' AND terkirim_at >= ?");
+        $s->execute(array(Permohonan::utc($mulai)));
+        return (int) $s->fetchColumn();
     }
 }
