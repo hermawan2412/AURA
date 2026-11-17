@@ -168,7 +168,7 @@ $peng = Permohonan::pengaturan($db);
 $jadwal = Waktu::jadwalDariJson($peng['jadwal_kerja']);
 $libur = $db->query('SELECT * FROM izin_hari_libur WHERE tanggal >= CURDATE() - INTERVAL 30 DAY ORDER BY tanggal')->fetchAll();
 $pegawai = $db->query(
-    'SELECT p.id, p.nama_lengkap, p.gelar_depan, p.gelar_belakang, p.jabatan, p.no_telp, m.kelompok, u.id AS user_id
+    'SELECT p.id, p.nama_lengkap, p.gelar_depan, p.gelar_belakang, p.jabatan, p.no_telp, p.ttd_berkas, m.kelompok, u.id AS user_id
      FROM pegawai p LEFT JOIN izin_pemetaan_pegawai m ON m.pegawai_id = p.id LEFT JOIN user_login u ON u.nip = p.nip AND u.status_aktif = 1
      WHERE p.status_aktif = 1 ORDER BY p.nama_lengkap'
 )->fetchAll();
@@ -330,17 +330,18 @@ $LABEL_MODE = array('nonaktif' => 'Nonaktif — jalur surat lama', 'aktif' => 'A
 
       <section class="iz-bagian" id="pemetaan" aria-labelledby="h-pemetaan">
         <h2 id="h-pemetaan">Kelompok pegawai</h2>
-        <p>Kelompok menentukan rute persetujuan. Nomor WA dipakai untuk pemberitahuan; nomor yang terisi di RESTU akan menimpa nomor di sini setiap malam. <?php echo $tanpaPemetaan ? '<b>' . $tanpaPemetaan . ' pegawai berakun belum dipetakan</b> dan belum bisa mengajukan izin.' : 'Semua pegawai berakun sudah dipetakan.'; ?></p>
+        <p>Kelompok menentukan rute persetujuan. Nomor WA dipakai untuk pemberitahuan; gambar TTD disalin dari RESTU setiap malam dan ditempel di surat; nomor yang terisi di RESTU akan menimpa nomor di sini setiap malam. <?php echo $tanpaPemetaan ? '<b>' . $tanpaPemetaan . ' pegawai berakun belum dipetakan</b> dan belum bisa mengajukan izin.' : 'Semua pegawai berakun sudah dipetakan.'; ?></p>
         <form method="post">
           <?php echo Csrf::field(); ?><input type="hidden" name="bagian" value="pemetaan">
           <div class="iz-gulir" style="border:1px solid var(--border); border-radius:var(--r-md);">
             <table class="iz-tabel">
-              <thead><tr><th>Pegawai</th><th>Akun</th><th>No. WA</th><th>Kelompok</th></tr></thead>
+              <thead><tr><th>Pegawai</th><th>Akun</th><th>TTD</th><th>No. WA</th><th>Kelompok</th></tr></thead>
               <tbody>
               <?php foreach ($pegawai as $i => $p): ?>
                 <tr style="--i:<?php echo $i; ?>">
                   <td><?php echo h(Formatter::namaBergelar($p)); ?><br><span class="redup"><?php echo h($p['jabatan']); ?></span></td>
                   <td><?php echo $p['user_id'] ? 'Ada' : '<span class="redup">Tidak ada</span>'; ?></td>
+                  <td><?php echo $p['ttd_berkas'] ? 'Ada' : '<span class="redup">Belum</span>'; ?></td>
                   <td><div class="field" style="margin:0;"><input type="tel" inputmode="tel" name="no_telp[<?php echo (int) $p['id']; ?>]" value="<?php echo h($p['no_telp']); ?>" placeholder="08…" aria-label="Nomor WA <?php echo h($p['nama_lengkap']); ?>" style="min-width:150px;"></div></td>
                   <td><div class="field" style="margin:0;"><select name="kelompok[<?php echo (int) $p['id']; ?>]" aria-label="Kelompok <?php echo h($p['nama_lengkap']); ?>">
                     <option value="">— belum —</option>

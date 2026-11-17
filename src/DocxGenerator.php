@@ -66,10 +66,12 @@ class DocxGenerator
         }
 
         foreach ($gambar as $placeholder => $pathGambar) {
-            if (!in_array($placeholder, $variabelDiTemplate, true) || !is_file($pathGambar)) {
+            // Nilai boleh path (lebar 350, rasio terjaga) atau array opsi setImageValue lengkap (mis. TTD izin).
+            $opsi = is_array($pathGambar) ? $pathGambar : array('path' => $pathGambar, 'width' => 350, 'ratio' => true);
+            if (!in_array($placeholder, $variabelDiTemplate, true) || !is_file($opsi['path'])) {
                 continue; // dokumen ini gak pakai placeholder gambar ini, atau berkas gak ada
             }
-            $processor->setImageValue($placeholder, array('path' => $pathGambar, 'width' => 350, 'ratio' => true));
+            $processor->setImageValue($placeholder, $opsi);
         }
 
         // Poin bernomor (Menimbang a,b,c / Mengingat 1,2,3 / Diktum KESATU,KEDUA): kalau template

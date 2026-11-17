@@ -21,6 +21,11 @@ return array(
     // Arsip PDF surat izin + salinan template beku. WAJIB di luar web root
     // (web root AURA = root repo). Milik user aplikasi, mode 0700.
     'direktori_arsip_izin' => '/var/lib/aura/izin',
+    // Gambar TTD pegawai untuk surat izin, ditarik cron sinkron dari API RESTU (token = api.token di config RESTU).
+    'restu_api' => array(
+        'url' => 'https://restu.pa-rantau.go.id/api/pegawai_daftar.php',
+        'token' => 'GANTI_DENGAN_TOKEN_API_RESTU',
+    ),
 
     // Opsional - cuma dibutuhkan cron/sync_pegawai_dari_restu.php (sync
     // harian data pegawai dari app RESTU). User MySQL 'aura_restu_reader'

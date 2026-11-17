@@ -144,7 +144,15 @@ class Dokumen
             if (!is_file($final)) {
                 $kerja = $dir . '/tmp/' . bin2hex(random_bytes(8));
                 mkdir($kerja, 0700, true);
-                $docx = DocxGenerator::generate($dir . '/template/' . $d['template_sha256'] . '.docx', json_decode($d['snapshot_nilai'], true), array());
+                $nilai = json_decode($d['snapshot_nilai'], true);
+                $gambar = array();
+                foreach (isset($nilai['_ttd']) ? $nilai['_ttd'] : array() as $ph => $berkas) {
+                    if ($berkas !== null && is_file($dir . '/ttd/' . basename($berkas))) {
+                        $gambar[$ph] = array('path' => $dir . '/ttd/' . basename($berkas), 'width' => '4cm', 'height' => '1.6cm', 'ratio' => true);
+                    }
+                }
+                unset($nilai['_ttd']);
+                $docx = DocxGenerator::generate($dir . '/template/' . $d['template_sha256'] . '.docx', $nilai, array(), $gambar);
                 rename($docx, $kerja . '/surat.docx');
                 self::kePdf($kerja);
                 if (!is_dir(dirname($final))) {
@@ -187,7 +195,7 @@ class Dokumen
         $selesai = $p['jam_kembali'] ? str_replace(':', '.', substr($p['jam_kembali'], 0, 5)) : 'selesai jam kerja';
 
         $s = $db->prepare(
-            'SELECT t.pemberi_nama, t.pemberi_jabatan, t.diputus_at, pg.nip, pg.unit_kerja
+            'SELECT t.pemberi_nama, t.pemberi_jabatan, t.diputus_at, pg.nip, pg.unit_kerja, pg.ttd_berkas
              FROM izin_tahap t JOIN pegawai pg ON pg.id = t.pemberi_pegawai_id
              WHERE t.permohonan_id = ? AND t.status = \'selesai\' ORDER BY t.id DESC LIMIT 1'
         );
@@ -199,7 +207,17 @@ class Dokumen
         $pemberi = array('nama' => $t['pemberi_nama'], 'jabatan' => $t['pemberi_jabatan'], 'nip' => $t['nip'], 'unit_kerja' => $t['unit_kerja']);
         $keterangan = 'Disetujui melalui AURA oleh ' . $t['pemberi_nama'] . ' pada ' . self::waktuLokal($t['diputus_at'], $tz) . ' ' . $zona . '. Nomor register ' . $nomor . '.';
 
+        // TTD dibekukan lewat nama berkas per isi (ttd/<sha256>.<ext>, tidak pernah ditimpa).
+        $ttdMengetahui = null;
+        if ($p['mengetahui_user_id']) {
+            $s = $db->prepare('SELECT pg.ttd_berkas FROM user_login u JOIN pegawai pg ON pg.nip = u.nip WHERE u.id = ?');
+            $s->execute(array($p['mengetahui_user_id']));
+            $ttdMengetahui = $s->fetchColumn() ?: null;
+        }
         $umum = array(
+            '_ttd' => array('ttd_pemberi' => $t['ttd_berkas'] ?: null, 'ttd_mengetahui' => $ttdMengetahui),
+            'ttd_pemberi' => '',
+            'ttd_mengetahui' => '',
             'pemberi_izin_nama_lengkap' => $pemberi['nama'],
             'pemberi_izin_jabatan' => (string) $pemberi['jabatan'],
             'penerima_izin_nama_lengkap' => $p['pemohon_nama'],

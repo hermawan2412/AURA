@@ -16,6 +16,13 @@ $utc = new DateTimeZone('UTC');
 $jumat = new DateTimeImmutable('2026-11-20 05:05:00', $utc);
 $keluar = array('jenis' => 'keluar_sementara', 'tanggal' => '2026-11-20', 'jam_mulai' => '14:00', 'jam_kembali' => '15:30', 'alasan' => 'Mengantar anak berobat ke puskesmas');
 
+// TTD contoh (fiktif) untuk Panitera (5) dan Wakil (2); Ketua (1) sengaja tanpa TTD.
+@mkdir($arsip . '/ttd', 0700, true);
+$ttd = hash_file('sha256', __DIR__ . '/contoh-ttd.png') . '.png';
+copy(__DIR__ . '/contoh-ttd.png', $arsip . '/ttd/' . $ttd);
+$db->exec("UPDATE pegawai SET ttd_berkas = NULL");
+$db->prepare('UPDATE pegawai SET ttd_berkas = ? WHERE id IN (2, 5)')->execute(array($ttd));
+
 // Pegawai kepaniteraan (Panitera menyetujui, Wakil mengetahui)
 $idPeg = P::ajukan($db, 7, $keluar, $jumat);
 ditolak('belum disetujui tidak bisa terbit', function () use ($db, $idPeg, $jumat) { D::siapkan($db, $idPeg, $jumat); });
@@ -29,6 +36,8 @@ cek('pegawai: waktu izin eksplisit', strpos($nilai['waktu_izin'], 'Jumat, 20 Nov
 cek('pegawai: mengetahui Wakil', $nilai['mengetahui_nama_lengkap'] === 'Uji Wakil', $nilai);
 cek('pegawai: jabatan mengetahui otomatis', $nilai['mengetahui_jabatan'] === 'Wakil Ketua Pengadilan Agama Rantau', $nilai);
 cek('pegawai: keterangan AURA', strpos($nilai['keterangan_aura'], 'Disetujui melalui AURA oleh Uji Panitera pada 20 November 2026 pukul 13.05 WITA') === 0, $nilai['keterangan_aura']);
+cek('TTD pemberi & mengetahui dibekukan di snapshot', $nilai['_ttd'] === array('ttd_pemberi' => $ttd, 'ttd_mengetahui' => $ttd), $nilai['_ttd']);
+cek('PDF memuat gambar TTD', substr_count(file_get_contents(D::pathPdf($d)), '/Subtype /Image') + substr_count(file_get_contents(D::pathPdf($d)), '/Subtype/Image') >= 2);
 copy(D::pathPdf($d), $contoh . '/contoh-izin-pegawai.pdf');
 
 // Idempoten: terbit ulang tidak membuat nomor/berkas baru

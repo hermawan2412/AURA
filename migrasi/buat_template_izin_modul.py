@@ -48,7 +48,9 @@ def pegawai(xml):
         assert baru.count(lama) == 1, lama
         baru = baru.replace(lama, ganti)
     xml = xml[:p.end()] + baru + xml[p.end():]
-    return tambah_keterangan(blok_mengetahui(xml))
+    xml = slot_ttd(blok_mengetahui(xml), '${pemberi_izin_nama_lengkap}', 'ttd_pemberi')
+    xml = slot_ttd(xml, '${mengetahui_nama_lengkap}', 'ttd_mengetahui')
+    return tambah_keterangan(xml)
 
 
 def ganti_paragraf(xml, cocok, fungsi):
@@ -78,6 +80,29 @@ def blok_mengetahui(xml):
     return xml
 
 
+
+def slot_ttd(xml, penanda_nama, placeholder):
+    """Ganti baris-baris kosong tepat di atas nama penanda tangan (paragraf TERAKHIR yang memuat
+    penanda_nama) dengan SATU paragraf setinggi baris-baris itu (tinggi minimal) berisi ${placeholder}.
+    Gambar TTD masuk ke situ; bila tidak ada gambar, ruang tanda tangan basah tetap sama."""
+    ps = list(re.finditer(r'<w:p[ >].*?</w:p>', xml, re.S))
+    teks = lambda m: re.sub(r'<[^>]+>', '', m.group(0)).strip()
+    i = max(k for k, m in enumerate(ps) if penanda_nama in m.group(0))
+    j = i
+    while j > 0 and teks(ps[j - 1]) == '' and '<w:drawing' not in ps[j - 1].group(0):
+        j -= 1
+    kosong = i - j
+    assert kosong >= 2, (placeholder, kosong)
+    ppr = re.search(r'<w:pPr>.*?</w:pPr>', ps[i].group(0), re.S)
+    ppr = ppr.group(0) if ppr else '<w:pPr></w:pPr>'
+    ppr = re.sub(r'<w:spacing[^>]*/>', '', ppr)
+    spasi = '<w:spacing w:before="0" w:after="0" w:line="%d" w:lineRule="atLeast"/>' % (kosong * 276)
+    gaya = re.search(r'<w:pStyle [^>]*/>', ppr)  # urutan skema: pStyle dulu, baru spacing
+    ppr = ppr.replace(gaya.group(0), gaya.group(0) + spasi, 1) if gaya else ppr.replace('<w:pPr>', '<w:pPr>' + spasi, 1)
+    baru = '<w:p>' + ppr + '<w:r><w:t xml:space="preserve">${%s}</w:t></w:r></w:p>' % placeholder
+    return xml[:ps[j].start()] + baru + xml[ps[i].start():]
+
+
 ubah('izin_keluar_kantor_pegawai.docx', 'izin_modul_pegawai.docx', pegawai)
-ubah('izin_keluar_kantor_hakim.docx', 'izin_modul_hakim.docx', tambah_keterangan)
+ubah('izin_keluar_kantor_hakim.docx', 'izin_modul_hakim.docx', lambda x: tambah_keterangan(slot_ttd(x, '${pemberi_izin_nama_lengkap}', 'ttd_pemberi')))
 print('OK templates/izin_modul_pegawai.docx, templates/izin_modul_hakim.docx')

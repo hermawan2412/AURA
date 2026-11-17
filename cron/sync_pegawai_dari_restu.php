@@ -208,3 +208,53 @@ foreach ($rowsAkun as $r) {
 echo '[' . date('c') . '] ' . ($dryRun ? 'DRY-RUN akun: ' : 'Sync akun selesai: ')
     . count($rowsAkun) . " baris RESTU diproses, "
     . "$akunDiupdate ke-update, $akunDibuat baru dibuat, $akunDilewati dilewati (pegawai blm sinkron), $akunGagal gagal.\n";
+
+// ============================================================
+// TAHAP 3 (2026-11-17): gambar tanda tangan untuk surat izin, lewat API RESTU
+// api/pegawai_daftar.php (berkas TTD RESTU tidak bisa dibaca user aplikasi AURA).
+// Opsional: hanya jalan bila config['restu_api'] = array('url' => ..., 'token' => ...).
+// Berkas disimpan per isi (sha256) dan tidak pernah ditimpa, sehingga surat lama yang
+// merujuk TTD lama tetap identik saat TTD di RESTU diganti.
+// ============================================================
+if (!empty($config['restu_api']['url']) && !empty($config['restu_api']['token'])) {
+    $ch = curl_init($config['restu_api']['url']);
+    curl_setopt_array($ch, array(CURLOPT_RETURNTRANSFER => true, CURLOPT_CONNECTTIMEOUT => 5, CURLOPT_TIMEOUT => 30,
+        CURLOPT_HTTPHEADER => array('X-Api-Token: ' . $config['restu_api']['token'])));
+    $respons = curl_exec($ch);
+    $kode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    $data = $kode === 200 ? json_decode((string) $respons, true) : null;
+    if (!is_array($data) || empty($data['ok']) || !isset($data['data']) || !is_array($data['data'])) {
+        fwrite(STDERR, '[' . date('c') . "] TTD: API RESTU gagal (HTTP $kode) - TTD tidak diubah.\n");
+        exit(1);
+    }
+    $dirTtd = \Aurat\Izin\Dokumen::direktori() . '/ttd';
+    if (!is_dir($dirTtd)) {
+        mkdir($dirTtd, 0700, true);
+    }
+    $setTtd = $aura->prepare('UPDATE pegawai SET ttd_berkas = ? WHERE nip = ? AND NOT (ttd_berkas <=> ?)');
+    $ttdBerubah = 0;
+    foreach ($data['data'] as $p) {
+        if (empty($p['nip'])) {
+            continue;
+        }
+        $berkas = null;
+        $isi = isset($p['ttd']) && is_string($p['ttd']) ? base64_decode($p['ttd'], true) : false;
+        if ($isi !== false && $isi !== '') {
+            $info = @getimagesizefromstring($isi);
+            $ext = $info && $info[2] === IMAGETYPE_PNG ? 'png' : ($info && $info[2] === IMAGETYPE_JPEG ? 'jpg' : null);
+            if ($ext !== null) {
+                $berkas = hash('sha256', $isi) . '.' . $ext;
+                if (!$dryRun && !is_file($dirTtd . '/' . $berkas)) {
+                    file_put_contents($dirTtd . '/' . $berkas . '.tmp', $isi);
+                    rename($dirTtd . '/' . $berkas . '.tmp', $dirTtd . '/' . $berkas);
+                }
+            }
+        }
+        if (!$dryRun) {
+            $setTtd->execute(array($berkas, $p['nip'], $berkas));
+            $ttdBerubah += $setTtd->rowCount();
+        }
+    }
+    echo '[' . date('c') . '] ' . ($dryRun ? 'DRY-RUN TTD: ' : 'Sync TTD selesai: ') . count($data['data']) . " pegawai dari API, $ttdBerubah TTD berubah.\n";
+}
