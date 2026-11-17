@@ -96,6 +96,11 @@ def slot_ttd(xml, penanda_nama, placeholder):
     ppr = re.search(r'<w:pPr>.*?</w:pPr>', ps[i].group(0), re.S)
     ppr = ppr.group(0) if ppr else '<w:pPr></w:pPr>'
     ppr = re.sub(r'<w:spacing[^>]*/>', '', ppr)
+    # Geser TTD ~1,2 cm ke kanan dari awal nama agar tampak lebih ke tengah blok tanda tangan.
+    ind = re.search(r'<w:ind ([^>]*)/>', ppr)
+    kiri = int(re.search(r'w:left="(\d+)"', ind.group(1)).group(1)) if ind and 'w:left=' in ind.group(1) else 0
+    ind_baru = '<w:ind w:left="%d"/>' % (kiri + 680)
+    ppr = ppr.replace(ind.group(0), ind_baru) if ind else ppr.replace('</w:pPr>', ind_baru + '</w:pPr>', 1)
     spasi = '<w:spacing w:before="0" w:after="0" w:line="%d" w:lineRule="atLeast"/>' % (kosong * 276)
     gaya = re.search(r'<w:pStyle [^>]*/>', ppr)  # urutan skema: pStyle dulu, baru spacing
     ppr = ppr.replace(gaya.group(0), gaya.group(0) + spasi, 1) if gaya else ppr.replace('<w:pPr>', '<w:pPr>' + spasi, 1)

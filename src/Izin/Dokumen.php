@@ -177,12 +177,12 @@ class Dokumen
         return self::muat($db, $permohonanId);
     }
 
-    /** Muat TTD di kotak maks 6 x 2,4 cm tanpa mengubah perbandingan sisi gambar. */
+    /** Muat TTD di kotak maks 6 x 3 cm tanpa mengubah perbandingan sisi gambar. */
     public static function ukuranTtd($path)
     {
-        // PhpWord hanya memahami piksel (96 dpi): 6 cm = 227 px, 2,4 cm = 91 px.
+        // PhpWord hanya memahami piksel (96 dpi): 6 cm = 227 px, 3 cm = 113 px.
         $info = getimagesize($path);
-        $w = 227; $h = 91;
+        $w = 227; $h = 113;
         if ($info && $info[0] > 0 && $info[1] > 0) {
             $skala = min($w / $info[0], $h / $info[1]);
             $w = $info[0] * $skala; $h = $info[1] * $skala;
