@@ -148,7 +148,7 @@ class Dokumen
                 $gambar = array();
                 foreach (isset($nilai['_ttd']) ? $nilai['_ttd'] : array() as $ph => $berkas) {
                     if ($berkas !== null && is_file($dir . '/ttd/' . basename($berkas))) {
-                        $gambar[$ph] = array('path' => $dir . '/ttd/' . basename($berkas), 'width' => '4cm', 'height' => '1.6cm', 'ratio' => true);
+                        $gambar[$ph] = array('path' => $dir . '/ttd/' . basename($berkas), 'width' => '6cm', 'height' => '2.4cm', 'ratio' => true);
                     }
                 }
                 unset($nilai['_ttd']);
