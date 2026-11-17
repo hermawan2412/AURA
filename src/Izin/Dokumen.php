@@ -148,7 +148,7 @@ class Dokumen
                 $gambar = array();
                 foreach (isset($nilai['_ttd']) ? $nilai['_ttd'] : array() as $ph => $berkas) {
                     if ($berkas !== null && is_file($dir . '/ttd/' . basename($berkas))) {
-                        $gambar[$ph] = array('path' => $dir . '/ttd/' . basename($berkas), 'width' => '6cm', 'height' => '2.4cm', 'ratio' => true);
+                        $gambar[$ph] = self::ukuranTtd($dir . '/ttd/' . basename($berkas));
                     }
                 }
                 unset($nilai['_ttd']);
@@ -175,6 +175,19 @@ class Dokumen
             fclose($kunci);
         }
         return self::muat($db, $permohonanId);
+    }
+
+    /** Muat TTD di kotak maks 6 x 2,4 cm tanpa mengubah perbandingan sisi gambar. */
+    public static function ukuranTtd($path)
+    {
+        // PhpWord hanya memahami piksel (96 dpi): 6 cm = 227 px, 2,4 cm = 91 px.
+        $info = getimagesize($path);
+        $w = 227; $h = 91;
+        if ($info && $info[0] > 0 && $info[1] > 0) {
+            $skala = min($w / $info[0], $h / $info[1]);
+            $w = $info[0] * $skala; $h = $info[1] * $skala;
+        }
+        return array('path' => $path, 'width' => (int) round($w), 'height' => (int) round($h), 'ratio' => false);
     }
 
     public static function pathPdf(array $d)
